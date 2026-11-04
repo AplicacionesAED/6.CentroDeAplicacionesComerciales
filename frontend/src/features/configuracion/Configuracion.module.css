@@ -1,0 +1,313 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--text-headline-size);
+  font-weight: var(--text-headline-weight);
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-data-size);
+}
+
+.proyectos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.proyectosLabel {
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+  letter-spacing: var(--text-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-title-size);
+  font-weight: var(--text-title-weight);
+}
+
+.hint {
+  margin: var(--space-xs) 0 0;
+  max-width: 75ch;
+  color: var(--color-ink-muted);
+  font-size: var(--text-data-size);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.divider {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.alerta {
+  margin: 0;
+  color: var(--color-warning-ink);
+  font-size: var(--text-data-size);
+}
+
+.vacio {
+  margin: 0;
+  padding: var(--space-md) 0;
+  text-align: center;
+  color: var(--color-ink-muted);
+  font-size: var(--text-data-size);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+/* Fila editable de una lista (descuento, subsidio, adicional). */
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.item > * {
+  flex: 1 1 160px;
+}
+
+.item .fijo {
+  flex: 0 0 auto;
+}
+
+.conmutador {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+}
+
+.segmentos {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.segmento {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-secondary);
+  font: inherit;
+  font-weight: 600;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.segmento + .segmento {
+  border-left: 1px solid var(--color-border-strong);
+}
+
+.segmento:hover {
+  background: var(--color-surface-hover);
+}
+
+.segmentoActivo,
+.segmentoActivo:hover {
+  background: var(--color-primary);
+  color: var(--color-primary-ink-on);
+}
+
+.tres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.dato {
+  padding: var(--space-md);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.datoTitulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.datoTexto {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-data-size);
+}
+
+.guardar {
+  position: sticky;
+  bottom: var(--space-sm);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.guardado {
+  color: var(--color-success-ink);
+  font-weight: 600;
+}
+
+/* Tabla de usuarios */
+.tablaWrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-data-size);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla th {
+  padding: 10px 14px;
+  text-align: left;
+  background: var(--color-surface-sunken);
+  border-bottom: 2px solid var(--color-primary);
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+  letter-spacing: var(--text-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-ink-secondary);
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.tabla tbody tr:nth-child(even) {
+  background: var(--color-surface-sunken);
+}
+
+.tabla tbody tr:hover {
+  background: var(--color-surface-hover);
+}
+
+.tabla tbody tr:nth-child(even):hover {
+  background: var(--color-surface-hover-strong);
+}
+
+.persona {
+  display: flex;
+  flex-direction: column;
+}
+
+.personaCorreo {
+  color: var(--color-ink-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.clave {
+  display: block;
+  padding: var(--space-md);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  letter-spacing: 0.04em;
+  user-select: all;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger-ink);
+  font-size: var(--text-data-size);
+}

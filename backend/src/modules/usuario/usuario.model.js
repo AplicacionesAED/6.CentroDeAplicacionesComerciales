@@ -41,4 +41,8 @@ const Usuario = sequelize.define(
   { tableName: 'usuarios', underscored: true, createdAt: 'creado_en', updatedAt: 'actualizado_en' }
 );
 
+Usuario.associate = (models) => {
+  Usuario.hasMany(models.AsesorProyecto, { foreignKey: 'usuario_id', as: 'proyectos' });
+};
+
 module.exports = Usuario;

@@ -4,6 +4,7 @@ import { AppShell } from './components/layout/AppShell.jsx';
 import { LoginPage } from './features/auth/LoginPage.jsx';
 import { CambiarPasswordPage } from './features/auth/CambiarPasswordPage.jsx';
 import CotizadorPage from './features/cotizador/CotizadorPage.jsx';
+import ConfiguracionPage from './features/configuracion/ConfiguracionPage.jsx';
 import { PendientePage } from './features/PendientePage.jsx';
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="documentacion" element={<PendientePage titulo="Documentación" />} />
           <Route element={<ProtectedRoute soloAdmin />}>
             <Route path="inventario" element={<PendientePage titulo="Inventario" />} />
+            <Route path="configuracion" element={<ConfiguracionPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/cotizador" replace />} />
         </Route>
