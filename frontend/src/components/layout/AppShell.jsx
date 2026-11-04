@@ -46,7 +46,7 @@ function migaFueraDelMenu(path) {
 // Pantallas de trabajo denso (el cotizador): el sidebar se oculta
 // para ganar ancho y se abre encima del contenido con el boton de menu del topbar.
 const RUTAS_SIN_SIDEBAR = [
-  /^\/cotizador(\/.*)?$/,
+  /^\/(cotizador|seguimiento|tramites|inventario|configuracion)(\/.*)?$/,
 ];
 
 export function AppShell() {
