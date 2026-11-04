@@ -1,0 +1,43 @@
+.switch {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  background: var(--color-border-strong);
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.on {
+  background: var(--color-primary);
+}
+
+.perilla {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(16, 21, 31, 0.3);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.on .perilla {
+  transform: translateX(20px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .perilla {
+    transition: none;
+  }
+}

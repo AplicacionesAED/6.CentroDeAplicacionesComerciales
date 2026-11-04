@@ -3,6 +3,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute.jsx';
 import { AppShell } from './components/layout/AppShell.jsx';
 import { LoginPage } from './features/auth/LoginPage.jsx';
 import { CambiarPasswordPage } from './features/auth/CambiarPasswordPage.jsx';
+import CotizadorPage from './features/cotizador/CotizadorPage.jsx';
 import { PendientePage } from './features/PendientePage.jsx';
 
 export default function App() {
@@ -13,8 +14,8 @@ export default function App() {
         <Route path="cambiar-password" element={<CambiarPasswordPage />} />
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/cotizador" replace />} />
-          <Route path="cotizador" element={<PendientePage titulo="Cotizador" />} />
-          <Route path="cotizador/:dealId" element={<PendientePage titulo="Cotizador" />} />
+          <Route path="cotizador" element={<CotizadorPage />} />
+          <Route path="cotizador/:dealId" element={<CotizadorPage />} />
           <Route path="seguimiento" element={<PendientePage titulo="Seguimiento" />} />
           <Route path="tramites" element={<PendientePage titulo="Trámites" />} />
           <Route path="documentacion" element={<PendientePage titulo="Documentación" />} />

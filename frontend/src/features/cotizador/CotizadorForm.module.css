@@ -1,0 +1,229 @@
+/* Wizard del cotizador: mismo patron que SolicitudForm (Solicitudes/Formulario.module.css): stepper de botones,
+   un panel por paso y pie pegajoso con Anterior/Siguiente. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.stepper {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.stepperItem {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.stepperBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-ink-secondary);
+  font: inherit;
+  font-size: var(--text-data-size);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+
+.stepperBtn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.stepperBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.stepperBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.stepperDot {
+  flex: 0 0 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-ink-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stepperLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepperDone .stepperDot {
+  background: var(--color-success-ink);
+  border-color: var(--color-success-ink);
+  color: #fff;
+}
+
+.stepperCurrent .stepperBtn {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.stepperCurrent .stepperDot {
+  background: #fff;
+  border-color: #fff;
+  color: var(--color-primary);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+/* Tarjeta de seccion con titulo (Title) y pista opcional. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-title-size);
+  font-weight: var(--text-title-weight);
+  line-height: var(--text-title-line);
+}
+
+.vacio {
+  margin: 0;
+  padding: var(--space-md);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+/* Paso final: acciones y resultados. */
+.acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid;
+  border-radius: var(--radius-md);
+  font-size: var(--text-data-size);
+}
+
+.aviso > svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.avisoAdvertencia {
+  background: var(--color-warning-surface);
+  border-color: var(--color-warning-ink);
+  color: var(--color-warning-ink);
+}
+
+.avisoExito {
+  background: var(--color-success-surface);
+  border-color: var(--color-success-ink);
+  color: var(--color-success-ink);
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.avisoError {
+  background: var(--color-danger-surface);
+  border-color: var(--color-danger-ink);
+  color: var(--color-danger-ink);
+  font-weight: 600;
+}
+
+.avisoTexto {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.resultado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+
+.pie {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.pieAcciones {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: auto;
+}

@@ -1,0 +1,96 @@
+/* Raiz del modulo Cotizador. Lleva `aed-chrome` (tokens de marca, ver layout/shellTokens.css) y ajusta dos tokens SOLO
+   dentro del cotizador: tarjetas blancas sobre el fondo tintado y un borde de campo con contraste >= 3:1 (mismo ajuste
+   que `.root` de Solicitudes/Formulario.module.css). */
+.root {
+  --color-surface: #fff;
+  --color-border-input: color-mix(in srgb, var(--color-primary) 55%, white);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+/* Selector de moneda COP/USD. */
+.moneda {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.monedaBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-ink-muted);
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.monedaBtn:hover {
+  color: var(--color-ink);
+}
+
+.monedaActiva {
+  background: #fff;
+  color: var(--color-ink);
+  box-shadow: 0 0 0 1px var(--color-border-strong);
+}
+
+.bandera {
+  width: 16px;
+  height: 12px;
+  flex: none;
+  border-radius: 2px;
+}
+
+/* Estado de carga. */
+.cargando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: 96px 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-data-size);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}

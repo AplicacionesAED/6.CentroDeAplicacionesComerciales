@@ -46,16 +46,17 @@ class ApiRequestError extends Error {
   }
 }
 
-async function request(path, options = {}) {
+async function request(path, { raw = false, ...options } = {}) {
+  // El Content-Type JSON solo va con un cuerpo de texto: un FormData lo arma el navegador con su boundary.
   const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
-    headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: typeof options.body === 'string' ? { 'Content-Type': 'application/json' } : undefined,
     ...options,
   });
 
   if (res.status === 401 && !options._retried && !path.startsWith('/auth/')) {
     const refreshed = await refreshSession();
-    if (refreshed) return request(path, { ...options, _retried: true });
+    if (refreshed) return request(path, { raw, ...options, _retried: true });
     sessionExpiredHandler?.();
   }
 
@@ -65,6 +66,8 @@ async function request(path, options = {}) {
   if (!res.ok) {
     throw new ApiRequestError(body?.error?.message ?? 'Error de red', res.status, body?.error?.details);
   }
+  // `raw`: respuesta cruda de un tercero (el proxy /hubspot), sin el sobre { data } de la API.
+  if (raw) return { data: body };
   return { data: body?.data, meta: body?.meta };
 }
 
@@ -74,6 +77,9 @@ const client = {
   put: (path, body) => request(path, { method: 'PUT', body: body !== undefined ? JSON.stringify(body) : undefined }),
   patch: (path, body) => request(path, { method: 'PATCH', body: body !== undefined ? JSON.stringify(body) : undefined }),
   delete: (path) => request(path, { method: 'DELETE' }),
+  upload: (path, formData) => request(path, { method: 'POST', body: formData }),
+  getRaw: (path) => request(path, { method: 'GET', raw: true }),
+  postRaw: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body), raw: true }),
 };
 
 export default client;

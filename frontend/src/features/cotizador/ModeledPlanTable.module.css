@@ -1,0 +1,277 @@
+/* Extras de la tabla modelada; la tabla en si usa PlanTable.module.css. */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-ink);
+  border-radius: var(--radius-md);
+  color: var(--color-warning-ink);
+  font-size: var(--text-data-size);
+}
+
+.aviso > svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* Edicion masiva. */
+.masiva {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-data-size);
+  color: var(--color-ink-secondary);
+}
+
+.masivaTitulo {
+  font-weight: 600;
+}
+
+.rango {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.numeroInput {
+  width: 72px;
+  text-align: right;
+}
+
+.seleccion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+  padding: 6px 10px;
+  background: var(--color-info-surface);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.seleccionConteo {
+  font-weight: 600;
+  color: var(--color-info-ink);
+}
+
+.monto {
+  position: relative;
+}
+
+.montoPrefijo {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-ink-muted);
+  pointer-events: none;
+}
+
+.montoInput {
+  width: 120px;
+  padding-left: 22px;
+  text-align: right;
+  font-weight: 600;
+}
+
+.enlace {
+  padding: 2px 6px;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.enlace:hover {
+  background: var(--color-surface-hover);
+}
+
+.enlaceSutil {
+  color: var(--color-ink-secondary);
+  text-decoration: underline;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* Celda de cuota editable. */
+.cuotaCelda {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.cuotaCampo {
+  position: relative;
+}
+
+.cuotaPrefijo {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-ink-muted);
+  pointer-events: none;
+}
+
+.cuotaInput {
+  width: 136px;
+  padding-left: 22px;
+  text-align: right;
+}
+
+.cuotaFija {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.incluye {
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Boton de estado de la columna "Tipo". */
+.chipAccionExito,
+.chipAccionInfo {
+  margin: 0 auto;
+}
+
+.chipAccionExito {
+  background: var(--color-success-surface);
+  border: 1px solid var(--color-success-ink);
+  color: var(--color-success-ink);
+  font-weight: 600;
+}
+
+.chipAccionInfo {
+  background: var(--color-info-surface);
+  border: 1px solid var(--color-primary);
+  color: var(--color-info-ink);
+  font-weight: 600;
+}
+
+.chipAccionExito:hover,
+.chipAccionInfo:hover {
+  background: var(--color-surface-hover);
+}
+
+/* Resumen financiero. */
+.resumenHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.resumenTitulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-title-size);
+  font-weight: var(--text-title-weight);
+}
+
+.resumenAcciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.ajuste {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 12px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--text-data-size);
+  font-weight: 600;
+}
+
+.ajusteAdvertencia {
+  background: var(--color-warning-surface);
+  border-color: var(--color-warning-ink);
+  color: var(--color-warning-ink);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin: 0;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.kpi dt {
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+  letter-spacing: var(--text-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.kpi dd {
+  margin: 0;
+  font-size: var(--text-headline-size);
+  font-weight: 600;
+}
+
+.kpiNota {
+  font-size: var(--text-data-size);
+  font-weight: 400;
+  color: var(--color-ink-muted);
+}
+
+.tachado {
+  margin-right: var(--space-sm);
+  font-size: var(--text-data-size);
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  text-decoration: line-through;
+}
+
+.resultado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.resultadoMonto {
+  font-size: var(--text-data-size);
+  font-weight: 600;
+}
