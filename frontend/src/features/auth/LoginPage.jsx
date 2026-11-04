@@ -16,6 +16,10 @@ const BENEFICIOS = [
   { icono: Building2, texto: 'Inventario de los proyectos' },
 ];
 
+// El acceso con correo y contrasena esta oculto por ahora (se entra con HubSpot o Microsoft). El formulario y su logica
+// siguen aqui: poner esta constante en true lo vuelve a mostrar.
+const LOGIN_CON_CREDENCIALES = false;
+
 const MENSAJES_ERROR_SSO = {
   OAuthAccountNotFound: 'No existe una cuenta vinculada a este correo de Microsoft. Pide a un administrador que cree tu usuario primero.',
   OAuthNotLinked: 'Tu cuenta existe, pero no está vinculada a Microsoft todavía. Inicia sesión con contraseña y vincúlala desde tu perfil.',
@@ -113,49 +117,54 @@ export function LoginPage() {
           <img className={styles.formLogo} src={`${import.meta.env.BASE_URL}aed-logo.png`} alt="aed" />
           <div className={styles.formHead}>
             <h1 className={styles.formTitle}>Te damos la bienvenida</h1>
-            <p className={styles.formSubtitle}>Ingresa con tu correo y contraseña para continuar.</p>
+            <p className={styles.formSubtitle}>{LOGIN_CON_CREDENCIALES ? 'Ingresa con tu correo y contraseña para continuar.' : 'Ingresa con tu cuenta para continuar.'}</p>
           </div>
 
-          <label className={styles.field}>
-            <span className={styles.label}>Correo</span>
-            <span className={styles.inputWrap}>
-              <Mail size={18} strokeWidth={1.75} className={styles.inputIcon} aria-hidden="true" />
-              <input
-                className={styles.input}
-                type="email"
-                autoComplete="username"
-                placeholder="nombre@empresa.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-              />
-            </span>
-          </label>
+          {LOGIN_CON_CREDENCIALES && (
+            <>
+            <label className={styles.field}>
+              <span className={styles.label}>Correo</span>
+              <span className={styles.inputWrap}>
+                <Mail size={18} strokeWidth={1.75} className={styles.inputIcon} aria-hidden="true" />
+                <input
+                  className={styles.input}
+                  type="email"
+                  autoComplete="username"
+                  placeholder="nombre@empresa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </span>
+            </label>
 
-          <label className={styles.field}>
-            <span className={styles.label}>Contraseña</span>
-            <span className={styles.inputWrap}>
-              <Lock size={18} strokeWidth={1.75} className={styles.inputIcon} aria-hidden="true" />
-              <input
-                className={styles.input}
-                type={verPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="Tu contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className={styles.toggle}
-                onClick={() => setVerPassword((v) => !v)}
-                aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              >
-                {verPassword ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
-              </button>
-            </span>
-          </label>
+            <label className={styles.field}>
+              <span className={styles.label}>Contraseña</span>
+              <span className={styles.inputWrap}>
+                <Lock size={18} strokeWidth={1.75} className={styles.inputIcon} aria-hidden="true" />
+                <input
+                  className={styles.input}
+                  type={verPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Tu contraseña"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className={styles.toggle}
+                  onClick={() => setVerPassword((v) => !v)}
+                  aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {verPassword ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
+                </button>
+              </span>
+            </label>
+
+              </>
+          )}
 
           {error && (
             <p className={styles.alert} role="alert">
@@ -163,11 +172,15 @@ export function LoginPage() {
             </p>
           )}
 
-          <button type="submit" className={styles.submit} disabled={enviando}>
-            {enviando ? 'Ingresando…' : 'Ingresar'}
-          </button>
+          {LOGIN_CON_CREDENCIALES && (
+            <>
+            <button type="submit" className={styles.submit} disabled={enviando}>
+              {enviando ? 'Ingresando…' : 'Ingresar'}
+            </button>
 
-          <p className={styles.divider}>o</p>
+            <p className={styles.divider}>o</p>
+              </>
+          )}
 
           <button type="button" className={styles.sso} onClick={() => window.location.assign(`${API_BASE_URL}/auth/azure/login`)}>
             <IconoMicrosoft />

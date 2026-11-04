@@ -101,7 +101,8 @@ const callback = asyncHandler(async (req, res) => {
   }
   if (!usuario.activo) return irAlLogin(res, 'HubSpotAccountInactive');
 
-  await usuario.update({ hubspot_user_id: identidad.userId, hubspot_email: identidad.email });
+  // Entrar por HubSpot no usa la contrasena del sistema, asi que nunca se pide cambiarla.
+  await usuario.update({ hubspot_user_id: identidad.userId, hubspot_email: identidad.email, debe_cambiar_password: false });
   // Los tokens se guardan cifrados: el Cotizador los usa despues, via /api/hubspot, para llamar a HubSpot como este usuario.
   try {
     await hubspotService.guardarTokens(usuario.id, tokens);
@@ -114,7 +115,7 @@ const callback = asyncHandler(async (req, res) => {
   res.clearCookie(HUBSPOT_STATE_COOKIE_NAME);
   res.cookie(ACCESS_COOKIE_NAME, createAccessToken(usuario.email, usuario.roles), { ...COOKIE_BASE, maxAge: ACCESS_TOKEN_EXPIRE_HOURS * 3600 * 1000 });
   res.cookie(REFRESH_COOKIE_NAME, createRefreshToken(usuario.email), { ...COOKIE_BASE, maxAge: REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600 * 1000 });
-  res.redirect(usuario.debe_cambiar_password ? `${FRONTEND_URL}/cambiar-password` : FRONTEND_URL);
+  res.redirect(FRONTEND_URL);
 });
 
 module.exports = { iniciarLogin, callback };

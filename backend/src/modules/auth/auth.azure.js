@@ -106,9 +106,11 @@ const callback = asyncHandler(async (req, res) => {
     return res.redirect(`${FRONTEND_URL}/login?error=OAuthAccountInactive`);
   }
 
+  // Entrar por Microsoft no usa la contrasena del sistema, asi que nunca se pide cambiarla.
+  if (usuario.debe_cambiar_password) await usuario.update({ debe_cambiar_password: false });
   await usuarioService.registrarConexion(usuario);
   setSessionCookies(res, usuario);
-  res.redirect(usuario.debe_cambiar_password ? `${FRONTEND_URL}/cambiar-password` : FRONTEND_URL);
+  res.redirect(FRONTEND_URL);
 });
 
 // POST /auth/azure/unlink -- requireAuth.
