@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+.git
+.gitattributes
+.env
+.env.*
+!.env.example
+*.md
+.pgdata
+scripts
+backend/data
+backend/scripts
+**/*.test.js
+.claude
