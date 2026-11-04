@@ -111,7 +111,7 @@ function FilaDeNegocio({ q, esAdmin, onAceptar, onEliminar, onAbrir }) {
   const vencida = !aceptada && estaVencida(q.created_at);
   return (
     <tr
-      className={lista.filaClicable}
+      className={`${lista.filaClicable} ${aceptada ? styles.filaAceptada : ""}`}
       onClick={() => onAbrir(q.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -147,7 +147,7 @@ function FilaPlana({ q, esAdmin, onAceptar, onEliminar, onAbrir }) {
   const vencida = !aceptada && estaVencida(q.created_at);
   return (
     <tr
-      className={lista.filaClicable}
+      className={`${lista.filaClicable} ${aceptada ? styles.filaAceptada : ""}`}
       onClick={() => onAbrir(q.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

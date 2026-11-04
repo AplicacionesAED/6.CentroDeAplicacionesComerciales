@@ -16,6 +16,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Cotizacion aceptada: toda la fila en el verde del proyecto (le gana al hover de la tabla). */
+.filaAceptada,
+.filaAceptada:hover {
+  background: var(--color-success-surface) !important;
+}
+
+.filaAceptada:hover {
+  background: color-mix(in srgb, var(--color-success-surface) 70%, var(--color-success-ink) 8%) !important;
+}
+
 .derecha {
   text-align: right !important;
 }
