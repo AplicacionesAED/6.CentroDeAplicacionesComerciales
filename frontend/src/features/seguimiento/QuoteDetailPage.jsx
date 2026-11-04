@@ -8,7 +8,6 @@ import { BackLink } from '../../components/ui/BackLink.jsx';
 import { formatCOP } from '../../utils/format.js';
 import { fetchQuoteById, urlPdfCotizacion } from '../../api/cotizador.js';
 import { torreCorta } from './cotizaciones.js';
-import GenerarAnexosButton from './GenerarAnexosButton.jsx';
 import styles from './Seguimiento.module.css';
 
 function Seccion({ titulo, children }) {
@@ -68,7 +67,6 @@ export default function QuoteDetailPage() {
         <h1 className={styles.detalleTitulo}>Cotización #{quoteId}</h1>
         {data && (
           <div className={styles.detalleAcciones}>
-            {data.status === 'aceptada' && <GenerarAnexosButton quoteId={data.id} variante="completo" />}
             {data.pdf_filename && <Button onClick={() => window.open(urlPdfCotizacion(quoteId), '_blank')}>Ver PDF</Button>}
           </div>
         )}

@@ -7,6 +7,7 @@ import CotizadorPage from './features/cotizador/CotizadorPage.jsx';
 import ConfiguracionPage from './features/configuracion/ConfiguracionPage.jsx';
 import SeguimientoPage from './features/seguimiento/SeguimientoPage.jsx';
 import QuoteDetailPage from './features/seguimiento/QuoteDetailPage.jsx';
+import TramitesPage from './features/tramites/TramitesPage.jsx';
 import { PendientePage } from './features/PendientePage.jsx';
 
 export default function App() {
@@ -21,7 +22,7 @@ export default function App() {
           <Route path="cotizador/:dealId" element={<CotizadorPage />} />
           <Route path="seguimiento" element={<SeguimientoPage />} />
           <Route path="seguimiento/:quoteId" element={<QuoteDetailPage />} />
-          <Route path="tramites" element={<PendientePage titulo="Trámites" />} />
+          <Route path="tramites" element={<TramitesPage />} />
           <Route path="documentacion" element={<PendientePage titulo="Documentación" />} />
           <Route element={<ProtectedRoute soloAdmin />}>
             <Route path="inventario" element={<PendientePage titulo="Inventario" />} />

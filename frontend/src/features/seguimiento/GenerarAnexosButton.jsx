@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { FileDown, Loader } from 'lucide-react';
-import { Button } from '../../components/ui/Button.jsx';
 import styles from './Seguimiento.module.css';
 
 // Genera y descarga el paquete de anexos (un solo PDF fusionado, listo para firmar) de una cotizacion aceptada.
 // El modulo de generacion (react-pdf + pdf-lib) se carga solo al hacer clic, no con la pagina.
-// `variante`: 'icono' para las filas de la tabla, 'completo' (con texto) para el detalle.
-export default function GenerarAnexosButton({ quoteId, variante = 'icono' }) {
+// Boton de icono para las filas de la tabla de Tramites.
+export default function GenerarAnexosButton({ quoteId }) {
   const [generando, setGenerando] = useState(false);
   const [aviso, setAviso] = useState(null); // { tipo: 'ok' | 'error', textos: string[] }
 
@@ -39,16 +38,9 @@ export default function GenerarAnexosButton({ quoteId, variante = 'icono' }) {
 
   return (
     <>
-      {variante === 'icono' ? (
-        <button type="button" className={styles.accion} onClick={generar} disabled={generando} title="Generar anexos (un solo PDF para firmar)" aria-label="Generar anexos">
-          {icono}
-        </button>
-      ) : (
-        <Button variant="secondary" onClick={generar} disabled={generando}>
-          {icono}
-          {generando ? 'Generando anexos…' : 'Generar anexos'}
-        </Button>
-      )}
+      <button type="button" className={styles.accion} onClick={generar} disabled={generando} title="Generar anexos (un solo PDF para firmar)" aria-label="Generar anexos">
+        {icono}
+      </button>
 
       {aviso && (
         <div role="status" className={`${styles.toast} ${aviso.tipo === 'ok' ? styles.toastOk : styles.toastError}`} onClick={(e) => e.stopPropagation()}>

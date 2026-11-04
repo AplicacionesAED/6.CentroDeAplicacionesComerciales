@@ -14,7 +14,6 @@ import { useAppConfig } from '../../context/AppConfigContext.jsx';
 import { PROJECTS } from '../../utils/cotizador.js';
 import { fetchDealsWithQuotes, fetchQuotesByDeal, acceptQuoteAPI, fetchAllQuotes, deleteQuoteAPI, urlPdfCotizacion } from '../../api/cotizador.js';
 import { moneda, torreCorta, fechaRelativa, fechaCompleta, estaVencida, numeroCotizacion, generadaPorOtro, coincideBusqueda, resumirPorNegocio } from './cotizaciones.js';
-import GenerarAnexosButton from './GenerarAnexosButton.jsx';
 import styles from './Seguimiento.module.css';
 
 const PAGE_SIZE = 20;
@@ -96,7 +95,6 @@ function Acciones({ q, esAdmin, vencida, onAceptar, onEliminar }) {
           <Eye size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>
       )}
-      {q.status === 'aceptada' && <GenerarAnexosButton quoteId={q.id} />}
       {puedeAceptar && (
         <button
           type="button"
