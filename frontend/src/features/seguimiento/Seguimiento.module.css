@@ -1,217 +1,32 @@
+/* Lista, filtros y tabla: ver components/ui/Lista.module.css (mismo patron que Cartera). Aqui solo lo propio de Seguimiento. */
 .page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-md);
-}
-
-.title {
-  font-family: var(--font-display);
-  font-size: var(--text-headline-size);
-  font-weight: var(--text-headline-weight);
-  margin: 0;
-}
-
-.resumen {
-  margin: var(--space-xs) 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  color: var(--color-ink-muted);
-  font-size: var(--text-data-size);
-}
-
-.resumenOk {
-  color: var(--color-success-ink);
-  font-weight: 600;
-}
-
-.resumenPend {
-  color: var(--color-warning-ink);
-  font-weight: 600;
-}
-
-/* Filtros */
-.filtros {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.filtrosFila {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-md);
-}
-
-.buscar {
-  flex: 1 1 240px;
-}
-
-.grupo {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.grupoLabel {
-  font-size: var(--text-label-size);
-  font-weight: var(--text-label-weight);
-  letter-spacing: var(--text-label-tracking);
-  text-transform: uppercase;
-  color: var(--color-ink-secondary);
-}
-
-.segmentos {
-  display: inline-flex;
-  overflow: hidden;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: #fff;
-}
-
-.segmento {
-  min-height: 44px;
-  padding: 0 14px;
-  border: 0;
-  background: transparent;
-  color: var(--color-ink-secondary);
-  font: inherit;
-  font-size: var(--text-data-size);
-  font-weight: 600;
-  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
-}
-
-.segmento + .segmento {
-  border-left: 1px solid var(--color-border-strong);
-}
-
-.segmento:hover {
-  background: var(--color-surface-hover);
-}
-
-.segmentoActivo,
-.segmentoActivo:hover {
-  background: var(--color-primary);
-  color: var(--color-primary-ink-on);
-}
-
-.conteo {
-  margin: 0;
-  color: var(--color-ink-muted);
-  font-size: var(--text-data-size);
-}
-
-/* Tabla */
-.tablaCard {
-  overflow: hidden;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  composes: page from '../../components/ui/Lista.module.css';
 }
 
 .tablaWrap {
-  overflow-x: auto;
+  composes: tableWrap from '../../components/ui/Lista.module.css';
 }
 
 .tabla {
-  width: 100%;
-  min-width: 900px;
-  border-collapse: collapse;
-  font-size: var(--text-data-size);
+  composes: table from '../../components/ui/Lista.module.css';
+}
+
+.tablaAncha {
+  min-width: 1000px;
   font-variant-numeric: tabular-nums;
-}
-
-.tabla th {
-  padding: 10px 14px;
-  text-align: left;
-  background: var(--color-surface-sunken);
-  border-bottom: 2px solid var(--color-primary);
-  font-size: var(--text-label-size);
-  font-weight: var(--text-label-weight);
-  letter-spacing: var(--text-label-tracking);
-  text-transform: uppercase;
-  color: var(--color-ink-secondary);
-  white-space: nowrap;
-}
-
-.tabla td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
 }
 
 .derecha {
   text-align: right !important;
 }
 
-.negocio {
-  cursor: pointer;
-}
-
-.negocio:hover,
-.cotizacion:hover {
-  background: var(--color-surface-hover);
-}
-
-.negocioAbierto {
-  background: var(--color-surface-sunken);
-}
-
-.negocioAceptado td:first-child {
-  box-shadow: inset 3px 0 0 var(--color-success-ink);
-}
-
-.cotizacion {
-  cursor: pointer;
-}
-
-.cotizacionAceptada {
-  background: var(--color-success-surface);
-}
-
-.cotizacionVencida {
-  background: var(--color-danger-surface);
-}
-
-.sub {
-  background: var(--color-surface-sunken);
+.sub,
+.sub:hover {
+  background: var(--color-surface-sunken) !important;
 }
 
 .subCelda {
   padding: 0 !important;
-}
-
-.subTabla {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.subTabla th {
-  background: var(--color-surface-sunken);
-  border-bottom: 1px solid var(--color-border-strong);
-}
-
-.nombre {
-  font-weight: 600;
-  color: var(--color-ink);
-}
-
-.negocio:hover .nombre {
-  color: var(--color-primary);
 }
 
 .muted {
@@ -253,51 +68,6 @@
   transform: rotate(90deg);
 }
 
-.acciones {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-xs);
-}
-
-.accion {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  background: transparent;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-secondary);
-  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
-}
-
-.accion:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  color: var(--color-ink);
-}
-
-.accion:disabled {
-  cursor: wait;
-  opacity: 0.6;
-}
-
-.accionAceptar {
-  color: var(--color-success-ink);
-  border-color: var(--color-success-ink);
-}
-
-.accionForzar {
-  color: var(--color-warning-ink);
-  border-color: var(--color-warning-ink);
-}
-
-.accionEliminar {
-  color: var(--color-danger-ink);
-  border-color: var(--color-danger-ink);
-}
-
 .girar {
   animation: girar 0.9s linear infinite;
 }
@@ -312,14 +82,6 @@
   padding: var(--space-2xl) var(--space-lg);
   text-align: center;
   color: var(--color-ink-muted);
-}
-
-.estadoTitulo {
-  margin: 0 0 var(--space-sm);
-  font-family: var(--font-display);
-  font-size: var(--text-headline-size);
-  font-weight: var(--text-headline-weight);
-  color: var(--color-ink);
 }
 
 .error {

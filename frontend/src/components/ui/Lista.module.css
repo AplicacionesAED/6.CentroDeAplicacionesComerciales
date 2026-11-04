@@ -1,0 +1,222 @@
+/* Patrón de página de lista compartido (encabezado, tarjeta de filtros, tabla, estados vacíos). Es el mismo de
+   Cartera (NegociosPage.module.css / InventarioPage): cada pantalla de lista lo importa y solo agrega lo propio. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-headline-size);
+  font-weight: var(--text-headline-weight);
+  color: var(--color-ink);
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-data-size);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.botonInterior {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spin {
+  animation: lista-giro 1s linear infinite;
+}
+
+@keyframes lista-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- filtros --- */
+
+.filtros {
+  composes: tarjeta from './Filtros.module.css';
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-md);
+  align-items: end;
+}
+
+.filtroBusqueda {
+  grid-column: span 2;
+}
+
+.labelConIcono {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.limpiar {
+  min-height: 44px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-ink-secondary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.limpiar:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-ink);
+}
+
+/* --- tabla --- */
+
+.tableWrap {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead th {
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+  letter-spacing: var(--text-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  background: var(--color-surface);
+  padding: 12px var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table thead th.derecha,
+.table tbody td.derecha {
+  text-align: right;
+}
+
+.table tbody td {
+  padding: 12px var(--space-md);
+  font-size: var(--text-data-size);
+  color: var(--color-ink);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-sunken);
+}
+
+.filaClicable {
+  cursor: pointer;
+}
+
+.celdaTitulo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.nombre {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.detalleSec {
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}
+
+.muted {
+  color: var(--color-ink-muted);
+}
+
+.mensaje {
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+  color: var(--color-ink-muted);
+  font-size: var(--text-body-size);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger-ink);
+  font-size: var(--text-data-size);
+}
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+}
+
+.vacioTitulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-title-size);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.vacioTexto {
+  margin: 0;
+  max-width: 420px;
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+.syncError {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-surface);
+  color: var(--color-danger-ink);
+  font-size: var(--text-data-size);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+/* --- acciones por fila (iconos) --- */
+
+.accionesFila {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+}

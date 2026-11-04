@@ -11,6 +11,7 @@ import { EditIconButton, ToggleActivoIconButton } from '../../components/ui/RowI
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { PROJECTS } from '../../utils/cotizador.js';
 import { fetchUsuarios, fetchRoles, crearUsuario, actualizarUsuario, regenerarPassword, asignarProyectos } from '../../api/usuarios.js';
+import lista from '../../components/ui/Lista.module.css';
 import styles from './Configuracion.module.css';
 
 const VACIO = { id: null, email: '', nombre: '', roles: [], proyectos: [] };
@@ -117,8 +118,8 @@ export function AsesoresSection() {
       {cargando && <p className={styles.vacio}>Cargando…</p>}
 
       {!cargando && (
-        <div className={styles.tablaWrap}>
-          <table className={styles.tabla}>
+        <div className={lista.tableWrap}>
+          <table className={lista.table}>
             <thead>
               <tr>
                 <th>Usuario</th>
@@ -133,9 +134,9 @@ export function AsesoresSection() {
               {usuarios.map((u) => (
                 <tr key={u.id}>
                   <td>
-                    <div className={styles.persona}>
-                      <strong>{u.nombre}</strong>
-                      <span className={styles.personaCorreo}>{u.email}</span>
+                    <div className={lista.celdaTitulo}>
+                      <span className={lista.nombre}>{u.nombre}</span>
+                      <span className={lista.detalleSec}>{u.email}</span>
                     </div>
                   </td>
                   <td>
@@ -155,7 +156,7 @@ export function AsesoresSection() {
                     </Badge>
                   </td>
                   <td>
-                    <div className={styles.acciones}>
+                    <div className={lista.accionesFila}>
                       <EditIconButton label={`Editar ${u.nombre}`} onClick={() => abrir(u)} />
                       <ToggleActivoIconButton
                         activo={u.activo}

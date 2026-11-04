@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FileDown, Loader } from 'lucide-react';
+import iconos from '../../components/ui/RowIconButtons.module.css';
 import styles from './Seguimiento.module.css';
 
 // Genera y descarga el paquete de anexos (un solo PDF fusionado, listo para firmar) de una cotizacion aceptada.
@@ -38,7 +39,7 @@ export default function GenerarAnexosButton({ quoteId }) {
 
   return (
     <>
-      <button type="button" className={styles.accion} onClick={generar} disabled={generando} title="Generar anexos (un solo PDF para firmar)" aria-label="Generar anexos">
+      <button type="button" className={`${iconos.iconButton} ${iconos.iconButtonPrimary}`} onClick={generar} disabled={generando} title="Generar anexos (un solo PDF para firmar)" aria-label="Generar anexos">
         {icono}
       </button>
 

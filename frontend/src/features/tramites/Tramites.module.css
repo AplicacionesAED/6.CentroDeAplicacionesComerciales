@@ -1,58 +1,6 @@
-/* Reusa la tabla, el encabezado y los estados de Seguimiento. */
-.page {
-  composes: page from '../seguimiento/Seguimiento.module.css';
-}
-
-.header {
-  composes: header from '../seguimiento/Seguimiento.module.css';
-}
-
-.title {
-  composes: title from '../seguimiento/Seguimiento.module.css';
-}
-
-.subtitle {
-  margin: var(--space-xs) 0 0;
-  color: var(--color-ink-muted);
-  font-size: var(--text-data-size);
-}
-
-.tablaCard {
-  composes: tablaCard from '../seguimiento/Seguimiento.module.css';
-}
-
-.tablaWrap {
-  composes: tablaWrap from '../seguimiento/Seguimiento.module.css';
-}
-
-.tabla {
-  composes: tabla from '../seguimiento/Seguimiento.module.css';
-}
-
-.tabla tbody tr:hover {
-  background: var(--color-surface-hover);
-}
-
-.estado {
-  composes: estado from '../seguimiento/Seguimiento.module.css';
-}
-
-.error {
-  composes: error from '../seguimiento/Seguimiento.module.css';
-}
-
-.muted {
-  composes: muted from '../seguimiento/Seguimiento.module.css';
-}
-
-.dosLineas {
-  composes: dosLineas from '../seguimiento/Seguimiento.module.css';
-}
-
+/* El resto del patron (encabezado, filtros, tabla) viene de components/ui/Lista.module.css. */
 .precio {
-  composes: precio from '../seguimiento/Seguimiento.module.css';
-}
-
-.girar {
-  composes: girar from '../seguimiento/Seguimiento.module.css';
+  font-weight: 700;
+  color: var(--color-success-ink);
+  font-variant-numeric: tabular-nums;
 }

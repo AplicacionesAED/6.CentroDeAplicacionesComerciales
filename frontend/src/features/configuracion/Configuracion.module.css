@@ -222,69 +222,9 @@
 }
 
 /* Tabla de usuarios */
-.tablaWrap {
-  overflow-x: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.tabla {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-data-size);
-  font-variant-numeric: tabular-nums;
-}
-
-.tabla th {
-  padding: 10px 14px;
-  text-align: left;
-  background: var(--color-surface-sunken);
-  border-bottom: 2px solid var(--color-primary);
-  font-size: var(--text-label-size);
-  font-weight: var(--text-label-weight);
-  letter-spacing: var(--text-label-tracking);
-  text-transform: uppercase;
-  color: var(--color-ink-secondary);
-  white-space: nowrap;
-}
-
-.tabla td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
-}
-
-.tabla tbody tr:nth-child(even) {
-  background: var(--color-surface-sunken);
-}
-
-.tabla tbody tr:hover {
-  background: var(--color-surface-hover);
-}
-
-.tabla tbody tr:nth-child(even):hover {
-  background: var(--color-surface-hover-strong);
-}
-
-.persona {
-  display: flex;
-  flex-direction: column;
-}
-
-.personaCorreo {
-  color: var(--color-ink-muted);
-}
-
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-
-.acciones {
-  display: flex;
-  justify-content: flex-end;
   gap: var(--space-xs);
 }
 

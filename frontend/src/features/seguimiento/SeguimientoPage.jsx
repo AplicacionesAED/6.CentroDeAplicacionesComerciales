@@ -2,44 +2,33 @@
 // filtro de tipo se pasa a una vista plana de cotizaciones individuales.
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, Eye, RefreshCw, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, Eye, FileText, Layers, RefreshCw, Search, Trash2, User } from 'lucide-react';
 import { Button } from '../../components/ui/Button.jsx';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Modal } from '../../components/ui/Modal.jsx';
 import { Pagination } from '../../components/ui/Pagination.jsx';
 import { SortHeader } from '../../components/ui/SortHeader.jsx';
-import { Field, TextInput, Select } from '../../components/ui/Field.jsx';
+import { Field, TextInput } from '../../components/ui/Field.jsx';
+import { MultiSelect } from '../../components/ui/MultiSelect.jsx';
 import { useSortableTable } from '../../hooks/useSortableTable.js';
 import { useAppConfig } from '../../context/AppConfigContext.jsx';
 import { PROJECTS } from '../../utils/cotizador.js';
 import { fetchDealsWithQuotes, fetchQuotesByDeal, acceptQuoteAPI, fetchAllQuotes, deleteQuoteAPI, urlPdfCotizacion } from '../../api/cotizador.js';
 import { moneda, torreCorta, fechaRelativa, fechaCompleta, estaVencida, numeroCotizacion, generadaPorOtro, coincideBusqueda, resumirPorNegocio } from './cotizaciones.js';
+import lista from '../../components/ui/Lista.module.css';
+import iconos from '../../components/ui/RowIconButtons.module.css';
 import styles from './Seguimiento.module.css';
 
 const PAGE_SIZE = 20;
 
 const TIPOS = [
-  { value: '', label: 'Todos' },
   { value: 'estandar', label: 'Estándar' },
   { value: 'modelador', label: 'Modelador' },
 ];
 const ESTADOS = [
-  { value: '', label: 'Todos' },
   { value: 'accepted', label: 'Aceptada' },
   { value: 'pending', label: 'Pendiente' },
 ];
-
-function Segmentos({ opciones, valor, onChange, etiqueta }) {
-  return (
-    <div className={styles.segmentos} role="group" aria-label={etiqueta}>
-      {opciones.map((o) => (
-        <button key={o.value} type="button" aria-pressed={valor === o.value} className={`${styles.segmento} ${valor === o.value ? styles.segmentoActivo : ''}`} onClick={() => onChange(o.value)}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function BadgeTipo({ tipo }) {
   return <Badge variant={tipo === 'modelador' ? 'info' : 'neutral'}>{tipo}</Badge>;
@@ -89,16 +78,16 @@ function Acciones({ q, esAdmin, vencida, onAceptar, onEliminar }) {
     fn();
   };
   return (
-    <div className={styles.acciones}>
+    <div className={lista.accionesFila}>
       {q.pdf_filename && (
-        <button type="button" className={styles.accion} title="Ver PDF" aria-label="Ver PDF" onClick={parar(() => window.open(urlPdfCotizacion(q.id), '_blank'))}>
+        <button type="button" className={`${iconos.iconButton} ${iconos.iconButtonPrimary}`} title="Ver PDF" aria-label="Ver PDF" onClick={parar(() => window.open(urlPdfCotizacion(q.id), '_blank'))}>
           <Eye size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>
       )}
       {puedeAceptar && (
         <button
           type="button"
-          className={`${styles.accion} ${forzar ? styles.accionForzar : styles.accionAceptar}`}
+          className={`${iconos.iconButton} ${iconos.iconButtonSuccess}`}
           title={forzar ? 'Cotización vencida: aceptar de todas formas (admin)' : 'Aceptar cotización'}
           aria-label="Aceptar cotización"
           onClick={parar(() => onAceptar(q))}
@@ -107,7 +96,7 @@ function Acciones({ q, esAdmin, vencida, onAceptar, onEliminar }) {
         </button>
       )}
       {esAdmin && (
-        <button type="button" className={`${styles.accion} ${styles.accionEliminar}`} title="Eliminar cotización (admin)" aria-label="Eliminar cotización" onClick={parar(() => onEliminar(q))}>
+        <button type="button" className={`${iconos.iconButton} ${iconos.iconButtonDanger}`} title="Eliminar cotización (admin)" aria-label="Eliminar cotización" onClick={parar(() => onEliminar(q))}>
           <Trash2 size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>
       )}
@@ -121,7 +110,7 @@ function FilaDeNegocio({ q, esAdmin, onAceptar, onEliminar, onAbrir }) {
   const vencida = !aceptada && estaVencida(q.created_at);
   return (
     <tr
-      className={`${styles.cotizacion} ${aceptada ? styles.cotizacionAceptada : vencida ? styles.cotizacionVencida : ''}`}
+      className={lista.filaClicable}
       onClick={() => onAbrir(q.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -157,7 +146,7 @@ function FilaPlana({ q, esAdmin, onAceptar, onEliminar, onAbrir }) {
   const vencida = !aceptada && estaVencida(q.created_at);
   return (
     <tr
-      className={`${styles.cotizacion} ${aceptada ? styles.cotizacionAceptada : vencida ? styles.cotizacionVencida : ''}`}
+      className={lista.filaClicable}
       onClick={() => onAbrir(q.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -169,7 +158,7 @@ function FilaPlana({ q, esAdmin, onAceptar, onEliminar, onAbrir }) {
     >
       <td><span className={styles.numero}>N° {numeroCotizacion(q.pdf_filename)}</span></td>
       <td>
-        <span className={styles.nombre}>{q.deal_name || '—'}</span>
+        <span className={lista.nombre}>{q.deal_name || '—'}</span>
         <PorOtro q={q} />
       </td>
       <td><Inmueble q={q} /></td>
@@ -192,13 +181,13 @@ function FilaNegocio({ deal, abierto, cotizaciones, cargando, esAdmin, onAlterna
   const aceptado = deal.has_accepted === 1;
   return (
     <Fragment>
-      <tr className={`${styles.negocio} ${abierto ? styles.negocioAbierto : ''} ${aceptado ? styles.negocioAceptado : ''}`} onClick={onAlternar}>
+      <tr className={lista.filaClicable} onClick={onAlternar}>
         <td>
           <ChevronRight size={16} strokeWidth={1.75} className={`${styles.chevron} ${abierto ? styles.chevronAbierto : ''}`} aria-hidden="true" />
         </td>
-        <td><span className={styles.nombre}>{deal.deal_name || `Negocio ${deal.deal_id}`}</span></td>
+        <td><span className={lista.nombre}>{deal.deal_name || `Negocio ${deal.deal_id}`}</span></td>
         <td>{deal.quote_count}</td>
-        <td className={styles.muted}>{fechaRelativa(deal.last_quote_date)}</td>
+        <td className={lista.muted}>{fechaRelativa(deal.last_quote_date)}</td>
         <td><BadgeEstado estado={aceptado ? 'aceptada' : 'pendiente'} /></td>
       </tr>
       {abierto && (
@@ -209,10 +198,10 @@ function FilaNegocio({ deal, abierto, cotizaciones, cargando, esAdmin, onAlterna
             ) : cotizaciones.length === 0 ? (
               <p className={styles.estado}>Sin cotizaciones registradas.</p>
             ) : (
-              <table className={styles.subTabla}>
+              <table className={lista.table}>
                 <thead>
                   <tr>
-                    <th>Fecha / N°</th><th>Inmueble</th><th>Tipo</th><th>Precio total</th><th>Separación</th><th>Cuota</th><th>Saldo</th><th>Estado</th><th className={styles.derecha}>Acciones</th>
+                    <th>Fecha / N°</th><th>Inmueble</th><th>Tipo</th><th>Precio total</th><th>Separación</th><th>Cuota</th><th>Saldo</th><th>Estado</th><th className={lista.derecha}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -243,10 +232,10 @@ export default function SeguimientoPage() {
   const [error, setError] = useState(null);
 
   const [busqueda, setBusqueda] = useState('');
-  const [tipo, setTipo] = useState('');
-  const [estado, setEstado] = useState('');
-  const [proyecto, setProyecto] = useState('');
-  const [vendedor, setVendedor] = useState('');
+  const [tipo, setTipo] = useState([]);
+  const [estado, setEstado] = useState([]);
+  const [proyecto, setProyecto] = useState([]);
+  const [vendedor, setVendedor] = useState([]);
   const [pagina, setPagina] = useState(1);
 
   const [aAceptar, setAAceptar] = useState(null);
@@ -256,14 +245,14 @@ export default function SeguimientoPage() {
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState(null);
 
-  const vistaPlana = Boolean(tipo);
-  const hayFiltros = Boolean(busqueda || tipo || estado || proyecto || vendedor);
+  const vistaPlana = tipo.length > 0;
+  const hayFiltros = Boolean(busqueda || tipo.length || estado.length || proyecto.length || vendedor.length);
   const limpiar = () => {
     setBusqueda('');
-    setTipo('');
-    setEstado('');
-    setProyecto('');
-    setVendedor('');
+    setTipo([]);
+    setEstado([]);
+    setProyecto([]);
+    setVendedor([]);
   };
 
   const cargar = useCallback(async () => {
@@ -285,9 +274,9 @@ export default function SeguimientoPage() {
   }, [cargar]);
 
   // Con filtro de vendedor o proyecto las cotizaciones de cada negocio salen de `todas` (ya cargadas).
-  const filtroEnCliente = Boolean(vendedor || proyecto);
+  const filtroEnCliente = vendedor.length > 0 || proyecto.length > 0;
   const cotizacionesDe = (dealId) =>
-    filtroEnCliente ? todas.filter((q) => q.deal_id === dealId && (!vendedor || q.user_email === vendedor) && (!proyecto || q.project === proyecto)) : porNegocio.get(dealId) ?? [];
+    filtroEnCliente ? todas.filter((q) => q.deal_id === dealId && (!vendedor.length || vendedor.includes(q.user_email)) && (!proyecto.length || proyecto.includes(q.project))) : porNegocio.get(dealId) ?? [];
 
   async function alternar(dealId) {
     setAbiertos((prev) => {
@@ -348,7 +337,7 @@ export default function SeguimientoPage() {
   }
 
   // Negocios que coinciden con los filtros (vista agrupada).
-  const resumenNegocios = useMemo(() => (filtroEnCliente ? resumirPorNegocio(todas.filter((q) => (!vendedor || q.user_email === vendedor) && (!proyecto || q.project === proyecto))) : negocios), [filtroEnCliente, todas, negocios, vendedor, proyecto]);
+  const resumenNegocios = useMemo(() => (filtroEnCliente ? resumirPorNegocio(todas.filter((q) => (!vendedor.length || vendedor.includes(q.user_email)) && (!proyecto.length || proyecto.includes(q.project)))) : negocios), [filtroEnCliente, todas, negocios, vendedor, proyecto]);
 
   const idsPorBusqueda = useMemo(() => (busqueda.trim() ? new Set(todas.filter((q) => coincideBusqueda(q, busqueda)).map((q) => q.deal_id)) : null), [todas, busqueda]);
 
@@ -357,8 +346,7 @@ export default function SeguimientoPage() {
       resumenNegocios
         .filter((d) => {
           if (idsPorBusqueda && !idsPorBusqueda.has(d.deal_id)) return false;
-          if (estado === 'accepted' && d.has_accepted !== 1) return false;
-          if (estado === 'pending' && d.has_accepted === 1) return false;
+          if (estado.length && !estado.includes(d.has_accepted === 1 ? 'accepted' : 'pending')) return false;
           return true;
         })
         // Sin orden elegido, mas recientes primero.
@@ -380,12 +368,11 @@ export default function SeguimientoPage() {
   const cotizacionesFiltradas = useMemo(
     () =>
       todas.filter((q) => {
-        if (tipo && q.quote_type !== tipo) return false;
-        if (vendedor && q.user_email !== vendedor) return false;
-        if (proyecto && q.project !== proyecto) return false;
+        if (tipo.length && !tipo.includes(q.quote_type)) return false;
+        if (vendedor.length && !vendedor.includes(q.user_email)) return false;
+        if (proyecto.length && !proyecto.includes(q.project)) return false;
         if (!coincideBusqueda(q, busqueda)) return false;
-        if (estado === 'accepted' && q.status !== 'aceptada') return false;
-        if (estado === 'pending' && q.status !== 'pendiente') return false;
+        if (estado.length && !estado.includes(q.status === 'aceptada' ? 'accepted' : 'pending')) return false;
         return true;
       }),
     [todas, tipo, vendedor, proyecto, busqueda, estado]
@@ -407,13 +394,13 @@ export default function SeguimientoPage() {
   const desde = (pagina - 1) * PAGE_SIZE;
 
   if (cargando && negocios.length === 0) {
-    return <div className={styles.page}><p className={styles.estado} role="status">Cargando seguimiento…</p></div>;
+    return <div className={lista.page}><p className={lista.mensaje} role="status">Cargando seguimiento…</p></div>;
   }
   if (error && negocios.length === 0) {
     return (
-      <div className={styles.page}>
-        <div className={styles.estado}>
-          <p className={styles.error} role="alert">{error}</p>
+      <div className={lista.page}>
+        <div className={lista.vacio}>
+          <p className={lista.error} role="alert">{error}</p>
           <Button variant="secondary" onClick={cargar}>Reintentar</Button>
         </div>
       </div>
@@ -421,126 +408,113 @@ export default function SeguimientoPage() {
   }
   if (!cargando && negocios.length === 0) {
     return (
-      <div className={styles.page}>
-        <div className={styles.estado}>
-          <h2 className={styles.estadoTitulo}>Sin cotizaciones registradas</h2>
-          <p>Las cotizaciones generadas desde el cotizador aparecerán aquí.</p>
+      <div className={lista.page}>
+        <div className={lista.vacio}>
+          <p className={lista.vacioTitulo}>Sin cotizaciones registradas</p>
+          <p className={lista.vacioTexto}>Las cotizaciones generadas desde el cotizador aparecerán aquí.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={lista.page}>
+      <header className={lista.header}>
         <div>
-          <h1 className={styles.title}>Seguimiento de cotizaciones</h1>
-          <p className={styles.resumen}>
-            <span>{resumen.negocios} negocios · {resumen.cotizaciones} cotizaciones</span>
-            <span className={styles.resumenOk}>{resumen.aceptados} con cotización aceptada</span>
-            <span className={styles.resumenPend}>{resumen.pendientes} pendientes</span>
+          <h1 className={lista.title}>Seguimiento de cotizaciones</h1>
+          <p className={lista.subtitle}>
+            {resumen.negocios} negocios · {resumen.cotizaciones} cotizaciones · {resumen.aceptados} con cotización aceptada · {resumen.pendientes} pendientes
           </p>
         </div>
-        <Button variant="secondary" onClick={cargar} disabled={cargando}>
-          <RefreshCw size={16} strokeWidth={1.75} className={cargando ? styles.girar : undefined} aria-hidden="true" />
-          Refrescar
-        </Button>
+        <div className={lista.acciones}>
+          <Button variant="secondary" onClick={cargar} disabled={cargando}>
+            <span className={lista.botonInterior}>
+              <RefreshCw size={16} strokeWidth={1.75} className={cargando ? lista.spin : undefined} aria-hidden="true" />
+              Refrescar
+            </span>
+          </Button>
+        </div>
       </header>
 
-      <section className={styles.filtros} aria-label="Filtros">
-        <div className={styles.filtrosFila}>
-          <Field label="Buscar" className={styles.buscar}>
-            {(p) => <TextInput type="search" placeholder="Negocio / inmueble / N° de cotización…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} {...p} />}
+      <div className={lista.filtros}>
+        <div className={lista.filtroBusqueda}>
+          <Field label={<span className={lista.labelConIcono}><Search size={13} />Buscar</span>}>
+            {(p) => <TextInput {...p} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Negocio, inmueble o N° de cotización…" />}
           </Field>
-          <div className={styles.grupo}>
-            <span className={styles.grupoLabel}>Tipo</span>
-            <Segmentos etiqueta="Tipo de cotización" opciones={TIPOS} valor={tipo} onChange={setTipo} />
-          </div>
-          <div className={styles.grupo}>
-            <span className={styles.grupoLabel}>Estado</span>
-            <Segmentos etiqueta="Estado" opciones={ESTADOS} valor={estado} onChange={setEstado} />
-          </div>
-          <Field label="Proyecto">
-            {(p) => (
-              <Select value={proyecto} onChange={(e) => setProyecto(e.target.value)} {...p}>
-                <option value="">Todos</option>
-                {PROJECTS.map((x) => <option key={x} value={x}>{x}</option>)}
-              </Select>
-            )}
-          </Field>
-          {esAdmin && (
-            <Field label="Vendedor">
-              {(p) => (
-                <Select value={vendedor} onChange={(e) => setVendedor(e.target.value)} {...p}>
-                  <option value="">Todos</option>
-                  {vendedores.map((email) => <option key={email} value={email}>{email}</option>)}
-                </Select>
-              )}
-            </Field>
-          )}
-          {hayFiltros && <Button variant="ghost" onClick={limpiar}>Limpiar</Button>}
         </div>
-        {vistaPlana ? (
-          <p className={styles.conteo}>Vista de cotizaciones individuales: <strong>{cotizacionesFiltradas.length}</strong> resultado{cotizacionesFiltradas.length !== 1 ? 's' : ''}</p>
-        ) : (
-          hayFiltros && <p className={styles.conteo}><strong>{negociosFiltrados.length}</strong> de {resumenNegocios.length} negocios</p>
+        <Field label={<span className={lista.labelConIcono}><FileText size={13} />Tipo</span>}>
+          {(p) => <MultiSelect {...p} options={TIPOS} value={tipo} onChange={setTipo} placeholder="Todos los tipos" />}
+        </Field>
+        <Field label={<span className={lista.labelConIcono}><Check size={13} />Estado</span>}>
+          {(p) => <MultiSelect {...p} options={ESTADOS} value={estado} onChange={setEstado} placeholder="Todos los estados" />}
+        </Field>
+        <Field label={<span className={lista.labelConIcono}><Layers size={13} />Proyecto</span>}>
+          {(p) => <MultiSelect {...p} options={PROJECTS} value={proyecto} onChange={setProyecto} placeholder="Todos los proyectos" />}
+        </Field>
+        {esAdmin && (
+          <Field label={<span className={lista.labelConIcono}><User size={13} />Vendedor</span>}>
+            {(p) => <MultiSelect {...p} options={vendedores} value={vendedor} onChange={setVendedor} placeholder="Todos los vendedores" />}
+          </Field>
         )}
-      </section>
+        {hayFiltros && (
+          <button type="button" className={lista.limpiar} onClick={limpiar}>
+            Limpiar filtros
+          </button>
+        )}
+      </div>
 
-      <div className={styles.tablaCard}>
-        <div className={styles.tablaWrap}>
-          {vistaPlana ? (
-            <table className={styles.tabla}>
-              <thead>
-                <tr>
-                  <th>N°</th><th>Negocio</th><th>Inmueble</th><th>Tipo</th><th>Fecha</th><th>Precio total</th><th>Cuota</th><th>Estado</th><th className={styles.derecha}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cotizacionesFiltradas.length === 0 ? (
-                  <tr><td colSpan={9} className={styles.estado}>No se encontraron cotizaciones con los filtros aplicados.</td></tr>
-                ) : (
-                  cotizacionesFiltradas.slice(desde, desde + PAGE_SIZE).map((q) => (
-                    <FilaPlana key={q.id} q={q} esAdmin={esAdmin} onAceptar={(c) => { setAAceptar(c); setErrorAceptar(null); }} onEliminar={(c) => { setAEliminar(c); setErrorEliminar(null); }} onAbrir={abrir} />
-                  ))
-                )}
-              </tbody>
-            </table>
-          ) : (
-            <table className={styles.tabla}>
-              <thead>
-                <tr>
-                  <th aria-label="Expandir" />
-                  <th><SortHeader label="Negocio" sortKey="deal_name" sort={sort} onSort={toggleSort} /></th>
-                  <th><SortHeader label="# Cotizaciones" sortKey="quote_count" sort={sort} onSort={toggleSort} /></th>
-                  <th><SortHeader label="Última cotización" sortKey="last_quote_date" sort={sort} onSort={toggleSort} /></th>
-                  <th><SortHeader label="Estado" sortKey="status" sort={sort} onSort={toggleSort} /></th>
-                </tr>
-              </thead>
-              <tbody>
-                {negociosOrdenados.length === 0 ? (
-                  <tr><td colSpan={5} className={styles.estado}>No se encontraron negocios con los filtros aplicados.</td></tr>
-                ) : (
-                  negociosOrdenados.slice(desde, desde + PAGE_SIZE).map((d) => (
-                    <FilaNegocio
-                      key={d.deal_id}
-                      deal={d}
-                      abierto={abiertos.has(d.deal_id)}
-                      cotizaciones={cotizacionesDe(d.deal_id)}
-                      cargando={cargandoNegocio.has(d.deal_id)}
-                      esAdmin={esAdmin}
-                      onAlternar={() => alternar(d.deal_id)}
-                      onAceptar={(c) => { setAAceptar(c); setErrorAceptar(null); }}
-                      onEliminar={(c) => { setAEliminar(c); setErrorEliminar(null); }}
-                      onAbrir={abrir}
-                    />
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <Pagination page={pagina} pageSize={PAGE_SIZE} total={total} onPageChange={setPagina} />
+      <div className={lista.tableWrap}>
+        {vistaPlana ? (
+          <table className={`${lista.table} ${styles.tablaAncha}`}>
+            <thead>
+              <tr>
+                <th>N°</th><th>Negocio</th><th>Inmueble</th><th>Tipo</th><th>Fecha</th><th>Precio total</th><th>Cuota</th><th>Estado</th><th className={lista.derecha}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cotizacionesFiltradas.length === 0 ? (
+                <tr><td colSpan={9} className={lista.mensaje}>Sin resultados para los filtros aplicados.</td></tr>
+              ) : (
+                cotizacionesFiltradas.slice(desde, desde + PAGE_SIZE).map((q) => (
+                  <FilaPlana key={q.id} q={q} esAdmin={esAdmin} onAceptar={(c) => { setAAceptar(c); setErrorAceptar(null); }} onEliminar={(c) => { setAEliminar(c); setErrorEliminar(null); }} onAbrir={abrir} />
+                ))
+              )}
+            </tbody>
+          </table>
+        ) : (
+          <table className={`${lista.table} ${styles.tablaAncha}`}>
+            <thead>
+              <tr>
+                <th aria-label="Expandir" />
+                <th><SortHeader label="Negocio" sortKey="deal_name" sort={sort} onSort={toggleSort} /></th>
+                <th><SortHeader label="# Cotizaciones" sortKey="quote_count" sort={sort} onSort={toggleSort} /></th>
+                <th><SortHeader label="Última cotización" sortKey="last_quote_date" sort={sort} onSort={toggleSort} /></th>
+                <th><SortHeader label="Estado" sortKey="status" sort={sort} onSort={toggleSort} /></th>
+              </tr>
+            </thead>
+            <tbody>
+              {negociosOrdenados.length === 0 ? (
+                <tr><td colSpan={5} className={lista.mensaje}>Sin resultados para los filtros aplicados.</td></tr>
+              ) : (
+                negociosOrdenados.slice(desde, desde + PAGE_SIZE).map((d) => (
+                  <FilaNegocio
+                    key={d.deal_id}
+                    deal={d}
+                    abierto={abiertos.has(d.deal_id)}
+                    cotizaciones={cotizacionesDe(d.deal_id)}
+                    cargando={cargandoNegocio.has(d.deal_id)}
+                    esAdmin={esAdmin}
+                    onAlternar={() => alternar(d.deal_id)}
+                    onAceptar={(c) => { setAAceptar(c); setErrorAceptar(null); }}
+                    onEliminar={(c) => { setAEliminar(c); setErrorEliminar(null); }}
+                    onAbrir={abrir}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
+        {total > 0 && <Pagination page={pagina} pageSize={PAGE_SIZE} total={total} onPageChange={setPagina} />}
       </div>
 
       <Modal

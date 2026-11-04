@@ -1,7 +1,7 @@
 // Portal de Ventas: carpetas y enlaces de cada proyecto. Todos navegan y copian enlaces; un administrador, en modo
 // "Gestionar", edita el arbol y los enlaces con autoguardado.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FilePlus, FolderPlus, Settings2 } from 'lucide-react';
+import { File, FilePlus, Folder, FolderPlus, Search, Settings2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button.jsx';
 import { Modal } from '../../components/ui/Modal.jsx';
 import { Tabs } from '../../components/ui/Tabs.jsx';
@@ -12,6 +12,7 @@ import { fetchDocumentos, guardarCarpetas, guardarUrls } from '../../api/documen
 import { PROYECTOS_DOC, TIPOS_ARCHIVO, aplanarCarpetas, buscarNodo, contarArchivos, destinosInvalidos, filtrarArbol, migrarAFsNodes, moverNodo, nuevoId } from './arbol.js';
 import NodoCarpeta from './NodoCarpeta.jsx';
 import TarjetaArchivo from './TarjetaArchivo.jsx';
+import lista from '../../components/ui/Lista.module.css';
 import styles from './Documentacion.module.css';
 
 // Escribir (renombrar, editar un enlace) no debe lanzar una peticion por tecla: se espera este tiempo.
@@ -189,8 +190,11 @@ export default function DocumentacionPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Portal de ventas</h1>
+      <header className={lista.header}>
+        <div>
+          <h1 className={lista.title}>Portal de ventas</h1>
+          <p className={lista.subtitle}>Carpetas y enlaces de cada proyecto</p>
+        </div>
         {puedeGestionar && estadoGuardado !== 'idle' && (
           <span className={`${styles.guardado} ${estadoGuardado === 'error' ? styles.guardadoError : ''}`} role="status">
             {estadoGuardado === 'guardando' ? 'Guardando…' : estadoGuardado === 'guardado' ? 'Guardado' : 'No se pudo guardar'}
@@ -227,11 +231,13 @@ export default function DocumentacionPage() {
 
       {!cargando && !error && (
         <>
-          <section className={styles.filtros} aria-label="Filtros">
-            <Field label="Buscar" className={styles.buscar}>
-              {(p) => <TextInput type="search" placeholder="Nombre del recurso…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} {...p} />}
-            </Field>
-            <Field label="Carpeta">
+          <div className={lista.filtros}>
+            <div className={lista.filtroBusqueda}>
+              <Field label={<span className={lista.labelConIcono}><Search size={13} />Buscar</span>}>
+                {(p) => <TextInput {...p} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre del recurso…" />}
+              </Field>
+            </div>
+            <Field label={<span className={lista.labelConIcono}><Folder size={13} />Carpeta</span>}>
               {(p) => (
                 <Select value={carpetaFiltro} onChange={(e) => setCarpetaFiltro(e.target.value)} {...p}>
                   <option value="">Todas las carpetas</option>
@@ -239,7 +245,7 @@ export default function DocumentacionPage() {
                 </Select>
               )}
             </Field>
-            <Field label="Tipo">
+            <Field label={<span className={lista.labelConIcono}><File size={13} />Tipo</span>}>
               {(p) => (
                 <Select value={tipoFiltro} onChange={(e) => setTipoFiltro(e.target.value)} {...p}>
                   <option value="">Todos los tipos</option>
@@ -247,8 +253,12 @@ export default function DocumentacionPage() {
                 </Select>
               )}
             </Field>
-            {hayFiltros && <Button variant="ghost" onClick={limpiarFiltros}>Limpiar</Button>}
-          </section>
+            {hayFiltros && (
+              <button type="button" className={lista.limpiar} onClick={limpiarFiltros}>
+                Limpiar filtros
+              </button>
+            )}
+          </div>
 
           {hayFiltros && <p className={styles.conteo}>{total} {total === 1 ? 'recurso encontrado' : 'recursos encontrados'}</p>}
 

@@ -1,21 +1,5 @@
 .page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-}
-
-.title {
-  font-family: var(--font-display);
-  font-size: var(--text-headline-size);
-  font-weight: var(--text-headline-weight);
-  margin: 0;
+  composes: page from '../../components/ui/Lista.module.css';
 }
 
 .guardado {
@@ -41,21 +25,6 @@
   flex-wrap: wrap;
   gap: var(--space-sm);
   padding-bottom: var(--space-sm);
-}
-
-.filtros {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.buscar {
-  flex: 1 1 240px;
 }
 
 .conteo {
