@@ -51,7 +51,14 @@ async function obtenerAccessToken(usuarioId, { forzarRefresh = false } = {}) {
   const registro = await HubspotToken.findOne({ where: { usuario_id: usuarioId } });
   if (!registro) throw new ApiError(409, 'Conecta tu cuenta de HubSpot para continuar.', { codigo: 'HUBSPOT_NO_CONECTADO' });
 
-  if (!forzarRefresh && registro.expira_en.getTime() - Date.now() > MARGEN_MS) return descifrar(registro.access_token_cifrado);
+  if (!forzarRefresh && registro.expira_en.getTime() - Date.now() > MARGEN_MS) {
+    try {
+      return descifrar(registro.access_token_cifrado);
+    } catch {
+      // Token guardado con otra HUBSPOT_TOKEN_KEY (o corrupto): no se puede leer, hay que reconectar.
+      throw new ApiError(409, 'La conexión con HubSpot venció. Vuelve a conectarla.', { codigo: 'HUBSPOT_NO_CONECTADO' });
+    }
+  }
 
   if (!refrescando.has(usuarioId)) {
     refrescando.set(
