@@ -1,12 +1,16 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './auth/ProtectedRoute.jsx';
 import { AppShell } from './components/layout/AppShell.jsx';
+import { LoginPage } from './features/auth/LoginPage.jsx';
+import { CambiarPasswordPage } from './features/auth/CambiarPasswordPage.jsx';
 import { PendientePage } from './features/PendientePage.jsx';
 
 export default function App() {
   return (
     <Routes>
+      <Route path="login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
+        <Route path="cambiar-password" element={<CambiarPasswordPage />} />
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/cotizador" replace />} />
           <Route path="cotizador" element={<PendientePage titulo="Cotizador" />} />
