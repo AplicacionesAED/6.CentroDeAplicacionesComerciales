@@ -1,4 +1,4 @@
-// Cotizaciones: se guardan aqui (fila + PDF en disco) y se reflejan en el negocio de HubSpot (nota con el
+// Cotizaciones: se guardan aqui (fila + PDF en Google Drive) y se reflejan en el negocio de HubSpot (nota con el
 // PDF, etapa del pipeline). Un no-admin solo ve las cotizaciones de los negocios de los que es dueno.
 // Aceptar una cotizacion vive en aceptacion.service.js.
 const fs = require('fs');
@@ -8,9 +8,11 @@ const sequelize = require('../../config/db');
 const ApiError = require('../../utils/ApiError');
 const { ETAPAS_POR_PROYECTO, sanitizarNombreArchivo, emailComercial } = require('../../utils/comercial');
 const { clienteDeUsuario, armarSubidaArchivo, borrarNotasPorTexto } = require('../hubspot/hubspotApi');
+const googleDrive = require('../../services/googleDrive');
 const Cotizacion = require('./cotizacion.model');
 
-// Los PDFs viven en el sistema de archivos (en Docker, montar este directorio como volumen persistente).
+// Los PDFs nuevos viven en Google Drive. Este directorio solo se lee para las cotizaciones que aun no se han pasado a
+// Drive con `npm run migrar-pdfs`.
 const QUOTES_DIR = process.env.QUOTES_DIR || path.join(__dirname, '..', '..', '..', 'data', 'quotes');
 
 // null para un admin (ve todo); el correo del usuario para los demas.
@@ -60,12 +62,20 @@ async function reflejarEnHubspot(usuario, cotizacion, archivo, { skipDealStage }
   }
 }
 
+// <raiz>/Cotizaciones/<proyecto>/<nombre>; devuelve el id del archivo en Drive.
+async function subirPdfADrive(buffer, nombre, proyecto) {
+  const carpeta = await googleDrive.resolverCarpetaCotizaciones(proyecto);
+  const subido = await googleDrive.subirArchivo(buffer, nombre, 'application/pdf', carpeta);
+  return subido.id;
+}
+
 async function crear(usuario, data, archivo) {
   let pdfFilename = null;
+  let pdfDriveId = null;
   if (archivo) {
-    fs.mkdirSync(QUOTES_DIR, { recursive: true });
     pdfFilename = `cotizacion_${data.dealId}_${Date.now()}.pdf`;
-    fs.writeFileSync(path.join(QUOTES_DIR, pdfFilename), archivo.buffer);
+    // Si Drive falla no se guarda la cotizacion: sin su PDF quedaria a medias.
+    pdfDriveId = await subirPdfADrive(archivo.buffer, pdfFilename, data.project);
   }
 
   const cotizacion = await Cotizacion.create({
@@ -85,6 +95,7 @@ async function crear(usuario, data, archivo) {
     num_installments: data.numInstallments ?? null,
     balance: data.balance ?? null,
     pdf_filename: pdfFilename,
+    pdf_drive_id: pdfDriveId,
     status: 'pendiente',
     snapshot_json: data.snapshot ?? null,
     parking_id: data.parkingId ?? null,
@@ -165,9 +176,16 @@ async function exportarPlanesDePago() {
 async function eliminar(id) {
   const cotizacion = await Cotizacion.findByPk(id);
   if (!cotizacion) throw new ApiError(404, 'Cotización no encontrada');
-  const pdf = cotizacion.pdf_filename;
+  const { pdf_filename: pdf, pdf_drive_id: driveId } = cotizacion;
   await cotizacion.destroy();
-  if (pdf) {
+  // En Drive nunca se borra: el archivo se renombra "(eliminado)" y queda recuperable a mano.
+  if (driveId) {
+    try {
+      await googleDrive.marcarArchivoEliminado(driveId);
+    } catch (e) {
+      console.warn('[cotizaciones] No se pudo marcar el PDF como eliminado en Drive:', e.message);
+    }
+  } else if (pdf) {
     try {
       fs.unlinkSync(path.join(QUOTES_DIR, pdf));
     } catch (e) {
@@ -177,14 +195,26 @@ async function eliminar(id) {
   return { success: true };
 }
 
-// Ruta absoluta del PDF de una cotizacion visible para el usuario.
-async function rutaPdf(usuario, id) {
+// Contenido del PDF de una cotizacion (Buffer), o null si no esta. De Drive, o del disco si aun no se ha migrado.
+async function leerPdf(cotizacion) {
+  if (cotizacion.pdf_drive_id) return googleDrive.descargarBuffer(cotizacion.pdf_drive_id);
+  if (!cotizacion.pdf_filename) return null;
+  const ruta = path.join(QUOTES_DIR, cotizacion.pdf_filename);
+  return fs.existsSync(ruta) ? fs.readFileSync(ruta) : null;
+}
+
+// PDF de una cotizacion visible para el usuario: { stream, nombre }.
+async function abrirPdf(usuario, id) {
   const cotizacion = await Cotizacion.findByPk(id);
   const dueno = filtroDueno(usuario);
   if (!cotizacion?.pdf_filename || (dueno && (cotizacion.user_email || '').toLowerCase() !== dueno)) throw new ApiError(404, 'PDF no encontrado');
+  if (cotizacion.pdf_drive_id) {
+    const { stream } = await googleDrive.obtenerArchivoStream(cotizacion.pdf_drive_id);
+    return { stream, nombre: cotizacion.pdf_filename };
+  }
   const ruta = path.join(QUOTES_DIR, cotizacion.pdf_filename);
   if (!fs.existsSync(ruta)) throw new ApiError(404, 'El archivo PDF no está en el servidor');
-  return { ruta, nombre: cotizacion.pdf_filename };
+  return { stream: fs.createReadStream(ruta), nombre: cotizacion.pdf_filename };
 }
 
 // Resumen por negocio para la lista de negocios: { dealId: { quoteCount, lastQuoteDate, hasAccepted } }.
@@ -210,6 +240,7 @@ async function ultimaPorNegocio() {
 
 module.exports = {
   QUOTES_DIR,
+  leerPdf,
   filtroDueno,
   cargarVisible,
   crear,
@@ -219,7 +250,7 @@ module.exports = {
   obtener,
   exportarPlanesDePago,
   eliminar,
-  rutaPdf,
+  abrirPdf,
   actividadPorNegocio,
   ultimaPorNegocio,
 };

@@ -28,10 +28,10 @@ const eliminar = asyncHandler(async (req, res) => ok(res, await service.eliminar
 
 // Descarga: responde el binario directo, sin el sobre { data }.
 const pdf = asyncHandler(async (req, res) => {
-  const { ruta, nombre } = await service.rutaPdf(req.usuario, req.params.id);
+  const { stream, nombre } = await service.abrirPdf(req.usuario, req.params.id);
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
-  res.sendFile(ruta);
+  stream.pipe(res);
 });
 
 module.exports = { crear, negociosConCotizaciones, listarTodas, exportarPlanes, porNegocio, obtener, aceptar, eliminar, pdf };

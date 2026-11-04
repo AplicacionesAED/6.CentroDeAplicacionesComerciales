@@ -23,6 +23,7 @@ const Cotizacion = sequelize.define(
     num_installments: { type: DataTypes.INTEGER, allowNull: true },
     balance: { type: DataTypes.DOUBLE, allowNull: true },
     pdf_filename: { type: DataTypes.STRING(255), allowNull: true },
+    pdf_drive_id: { type: DataTypes.STRING(100), allowNull: true }, // id del PDF en Google Drive
     status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'pendiente' }, // 'pendiente' | 'aceptada'
     snapshot_json: { type: DataTypes.JSONB, allowNull: true }, // mismos datos que el PDF, para la vista HTML
     parking_id: { type: DataTypes.STRING(30), allowNull: true },

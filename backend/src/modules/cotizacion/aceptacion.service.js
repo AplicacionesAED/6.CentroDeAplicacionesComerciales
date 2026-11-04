@@ -2,15 +2,13 @@
 // a HubSpot como nota, avanza la etapa, deja en el negocio solo la unidad y los accesorios aceptados, y
 // separa/libera unidad y accesorios en HubSpot. Los pasos de HubSpot posteriores a la BD son de mejor
 // esfuerzo (se registran y se sigue), salvo la subida del PDF y la nota, que fallan la peticion como en la app vieja.
-const fs = require('fs');
-const path = require('path');
 const { Op } = require('sequelize');
 const sequelize = require('../../config/db');
 const ApiError = require('../../utils/ApiError');
 const { ETAPAS_POR_PROYECTO, OBJETO_UNIDADES, OBJETO_ACCESORIOS, sanitizarNombreArchivo } = require('../../utils/comercial');
 const { clienteDeUsuario, clienteDeServicio, armarSubidaArchivo, borrarNotasPorTexto } = require('../hubspot/hubspotApi');
 const Cotizacion = require('./cotizacion.model');
-const { QUOTES_DIR, cargarVisible } = require('./cotizacion.service');
+const { leerPdf, cargarVisible } = require('./cotizacion.service');
 
 const OCHO_DIAS_MS = 8 * 86400 * 1000;
 const fechaColombia = () =>
@@ -122,10 +120,10 @@ async function aceptar(usuario, id) {
 
   // 4. PDF a HubSpot con su nota, etapa "aceptada" y fecha de aceptacion.
   if (cotizacion.pdf_filename) {
-    const ruta = path.join(QUOTES_DIR, cotizacion.pdf_filename);
-    if (fs.existsSync(ruta)) {
+    const pdf = await leerPdf(cotizacion);
+    if (pdf) {
       const nombrePdf = `COTIZACION-${sanitizarNombreArchivo(cliente)}-${sanitizarNombreArchivo(cotizacion.unit_code || 'NA')}-${new Date().toISOString().slice(0, 10)}.pdf`;
-      const subida = await hs.subir('/files/v3/files', armarSubidaArchivo(fs.readFileSync(ruta), nombrePdf));
+      const subida = await hs.subir('/files/v3/files', armarSubidaArchivo(pdf, nombrePdf));
       await hs.post('/crm/v3/objects/notes', {
         properties: {
           hs_timestamp: new Date().toISOString(),
