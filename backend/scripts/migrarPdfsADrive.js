@@ -20,6 +20,19 @@ const CARPETAS = [QUOTES_DIR, process.env.LEGACY_QUOTES_DIR].filter(Boolean);
 
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Subidas simultaneas a Drive (mas de ~6 suele chocar con el limite de la cuenta de servicio).
+const PARALELO = 5;
+
+// Procesa `items` con `PARALELO` trabajadores a la vez.
+async function enParalelo(items, tarea) {
+  let siguiente = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(PARALELO, items.length) }, async () => {
+      while (siguiente < items.length) await tarea(items[siguiente++]);
+    })
+  );
+}
+
 // Drive responde 403/429 "rate limit" si se sube muy rapido: se reintenta con espera creciente.
 async function conReintentos(fn) {
   for (let intento = 1; ; intento++) {
@@ -54,30 +67,29 @@ async function main() {
   const faltan = [];
   let subidas = 0;
   let movidas = 0;
+  const subibles = [];
   for (const c of porSubir) {
     const ruta = buscarArchivo(c.pdf_filename);
-    if (!ruta) {
-      faltan.push(c);
-      continue;
-    }
+    if (ruta) subibles.push({ c, ruta });
+    else faltan.push(c);
+  }
+  await enParalelo(subibles, async ({ c, ruta }) => {
     if (APLICAR) {
       const carpeta = await conReintentos(() => destinoDe(c));
       const subido = await conReintentos(() => googleDrive.subirArchivo(fs.readFileSync(ruta), c.pdf_filename, 'application/pdf', carpeta));
       await c.update({ pdf_drive_id: subido.id });
-      await esperar(300);
     }
     subidas++;
-  }
+  });
   // Los que ya estaban en Drive se acomodan en su carpeta de negocio y fecha (el id del archivo no cambia).
-  for (const c of enDrive) {
+  await enParalelo(enDrive, async (c) => {
     if (APLICAR) {
       const carpeta = await conReintentos(() => destinoDe(c));
       if (await conReintentos(() => googleDrive.moverArchivo(c.pdf_drive_id, carpeta))) movidas++;
-      await esperar(300);
     } else {
       movidas++;
     }
-  }
+  });
 
   console.log(`\n${APLICAR ? 'Subidos' : 'Se subirian'}: ${subidas}`);
   console.log(`${APLICAR ? 'Reubicados' : 'Se reubicarian'} (ya estaban en Drive): ${movidas}`);

@@ -64,7 +64,26 @@ const limpiarNombre = (texto) => String(texto ?? '').replace(/[\\/:*?"<>|]/g, ' 
 // <raiz>/Cotizaciones/<proyecto>/<id del negocio> - <nombre>/<AAAA-MM-DD>
 // La carpeta del negocio se busca por el prefijo "<id> - " (el id no cambia aunque renombren el negocio en HubSpot) y
 // se reutiliza; solo se crea si no existe. `fecha` ya viene como AAAA-MM-DD (dia de la cotizacion, hora de Colombia).
+// Los ids de carpeta se guardan en memoria (la promesa, no el valor: dos subidas simultaneas al mismo negocio esperan la
+// misma busqueda y no crean la carpeta dos veces). Si la busqueda falla se descarta para poder reintentar.
+const cacheNegocios = new Map();
+const cacheFechas = new Map();
+function conCache(cache, clave, calcular) {
+  if (!cache.has(clave)) {
+    cache.set(clave, calcular().catch((e) => {
+      cache.delete(clave);
+      throw e;
+    }));
+  }
+  return cache.get(clave);
+}
+
 async function resolverCarpetaCotizacion({ proyecto, dealId, dealName, fecha }) {
+  const carpetaNegocio = await conCache(cacheNegocios, JSON.stringify([proyecto, dealId]), () => resolverCarpetaNegocio({ proyecto, dealId, dealName }));
+  return conCache(cacheFechas, JSON.stringify([carpetaNegocio, fecha]), () => buscarOCrearCarpeta(fecha, carpetaNegocio));
+}
+
+async function resolverCarpetaNegocio({ proyecto, dealId, dealName }) {
   const drive = getDriveClient();
   const cotizaciones = await buscarOCrearCarpeta('Cotizaciones', process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID);
   const carpetaProyecto = await buscarOCrearCarpeta(limpiarNombre(proyecto) || 'Sin proyecto', cotizaciones);
@@ -78,8 +97,7 @@ async function resolverCarpetaCotizacion({ proyecto, dealId, dealName, fecha }) 
     spaces: 'drive',
   });
   const existente = (data.files ?? []).find((f) => f.name.startsWith(prefijo));
-  const carpetaNegocio = existente ? existente.id : await buscarOCrearCarpeta(`${prefijo}${limpiarNombre(dealName) || 'Sin nombre'}`, carpetaProyecto);
-  return buscarOCrearCarpeta(fecha, carpetaNegocio);
+  return existente ? existente.id : buscarOCrearCarpeta(`${prefijo}${limpiarNombre(dealName) || 'Sin nombre'}`, carpetaProyecto);
 }
 
 // Mover en Drive solo cambia el padre: el id del archivo no cambia. Devuelve false si ya estaba en esa carpeta.
