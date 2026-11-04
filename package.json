@@ -9,7 +9,8 @@
     "build": "npm run build --prefix frontend",
     "test": "npm test --prefix frontend",
     "db:migrate": "npm run db:migrate --prefix backend",
-    "crear-admin": "npm run crear-admin --prefix backend --"
+    "crear-admin": "npm run crear-admin --prefix backend --",
+    "migrar-datos": "npm run migrar-datos --prefix backend --"
   },
   "devDependencies": {
     "concurrently": "^9.2.4"

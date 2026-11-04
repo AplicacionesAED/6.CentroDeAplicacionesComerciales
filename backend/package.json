@@ -7,7 +7,8 @@
     "dev": "nodemon src/server.js",
     "start": "npm run db:migrate && node src/server.js",
     "db:migrate": "sequelize-cli db:migrate",
-    "crear-admin": "node scripts/crearAdmin.js"
+    "crear-admin": "node scripts/crearAdmin.js",
+    "migrar-datos": "node scripts/migrarDatosLegado.js"
   },
   "dependencies": {
     "@azure/msal-node": "^2.16.2",
