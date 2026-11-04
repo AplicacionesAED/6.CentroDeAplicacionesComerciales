@@ -2,14 +2,13 @@
 // HubSpot. Lo que sale de /hubspot/* es la respuesta cruda de HubSpot (por eso `getRaw`/`postRaw`); el resto
 // llega dentro de `{ data }` y client.js ya lo desenvuelve.
 import client, { API_BASE_URL } from './client.js';
+import { OBJETO_UNIDADES } from '../utils/cotizador.js';
 
 const PROPIEDADES_UNIDAD = [
   'id_unidad', 'torre', 'piso', 'codigo_unidad', 'valor_unidad_comercial', 'valor_m_comercial', 'built_area_m2', 'view_type',
   'private_area_m2', 'terrace_area_m2', 'property_type', 'unit_status', 'number_bedrooms', 'number_bathrooms', 'bono',
   'tipo_de_apartamento', 'floor_plan_link', 'estudios', 'plano_piso_sombreado',
 ];
-
-const OBJETO_UNIDADES = import.meta.env.VITE_HUBSPOT_OBJECT_ID || '2-51798334';
 
 const mapearUnidad = (item) => ({
   id: item.id,
@@ -119,6 +118,12 @@ export async function fetchAvailableUnits(project, refresh = false, allStatuses 
   if (refresh) params.set('refresh', 'true');
   if (allStatuses) params.set('status', 'all');
   const { data } = await client.get(`/inventario/unidades?${params}`);
+  return data.units;
+}
+
+// Unidades de los 4 proyectos con todos sus estados (solo administradores).
+export async function fetchInventory() {
+  const { data } = await client.get('/inventario');
   return data.units;
 }
 
