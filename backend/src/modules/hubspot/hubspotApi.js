@@ -6,6 +6,12 @@
 const ApiError = require('../../utils/ApiError');
 const { API_URL, obtenerAccessToken } = require('./hubspot.service');
 
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// HubSpot limita las llamadas por segundo (la busqueda, 5/s por token) y responde 429 "secondly limit". Se reintenta esperando lo que
+// indique `Retry-After` (o 1 s, 2 s, ...) en vez de fallar: asi una lista grande o dos pantallas cargando a la vez no se caen.
+const REINTENTOS_429 = 6;
+
 async function enviar(token, metodo, ruta, { query, cuerpo, binario } = {}) {
   const url = new URL(`${API_URL}${ruta}`);
   for (const [k, v] of Object.entries(query ?? {})) if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
@@ -35,6 +41,11 @@ function crearCliente(obtenerToken) {
   async function llamar(metodo, ruta, opciones) {
     let res = await enviar(await obtenerToken(false), metodo, ruta, opciones);
     if (res.status === 401) res = await enviar(await obtenerToken(true), metodo, ruta, opciones);
+    for (let intento = 1; res.status === 429 && intento <= REINTENTOS_429; intento++) {
+      const indicada = Number(res.headers.get('retry-after')) * 1000;
+      await esperar(Math.min(indicada > 0 ? indicada : 1000 * intento, 10000) + Math.random() * 250);
+      res = await enviar(await obtenerToken(false), metodo, ruta, opciones);
+    }
     const data = await leer(res);
     if (!res.ok) {
       const noConectado = res.status === 401;
@@ -75,6 +86,8 @@ async function buscarTodos(hs, ruta, cuerpo) {
     const r = await hs.post(ruta, { ...cuerpo, limit: 100, ...(after ? { after } : {}) });
     resultados = resultados.concat(r.results || []);
     after = r.paging?.next?.after;
+    // Una pausa entre paginas mantiene la busqueda por debajo del limite de 5 llamadas por segundo.
+    if (after) await esperar(250);
   } while (after);
   return resultados;
 }
