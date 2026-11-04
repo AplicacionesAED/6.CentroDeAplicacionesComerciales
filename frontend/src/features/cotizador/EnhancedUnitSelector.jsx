@@ -105,7 +105,7 @@ export default function EnhancedUnitSelector({ associatedUnits, availableUnits, 
   // Todas las unidades del proyecto (cualquier estado): la cuadricula tambien muestra las no disponibles.
   const { units: projectUnits, loading: projectLoading, refresh: refreshProject } = useProjectUnits(project ?? null);
   const associatedIds = new Set(associatedUnits.map((u) => u.id));
-  const filteredAvailable = availableUnits.filter((u) => !associatedIds.has(u.id) && u.unit_status === 'Disponible');
+  const filteredAvailable = availableUnits.filter((u) => u.unit_status === 'Disponible');
   // Fetch towers on mount so they're available for both tabs
   useEffect(() => {
     setTowersLoading(true);

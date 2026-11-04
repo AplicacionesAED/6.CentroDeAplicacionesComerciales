@@ -58,7 +58,7 @@ export default function TowerGrid({ units, selectedId, associatedIds, search, vi
             <span className={styles.piso}>{piso > 0 ? `Piso ${piso}` : 'Sin piso'}</span>
             {huecos.map((u, i) => {
               if (!u) return <span key={i} className={styles.hueco} aria-hidden="true" />;
-              const disponible = u.unit_status === DISPONIBLE && !associatedIds.has(u.id);
+              const disponible = u.unit_status === DISPONIBLE;
               const seleccionada = u.id === selectedId;
               const atenuada = disponible && !coincide(u);
               const detalle = [u.alcobas && `${u.alcobas} alc.`, u.area_construida > 0 && `${u.area_construida} m²`, u.tipo_vista].filter(Boolean).join(' · ');
