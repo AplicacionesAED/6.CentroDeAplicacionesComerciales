@@ -1,8 +1,8 @@
 // Login con HubSpot (OAuth2, authorization code) hecho en el servidor: el navegador solo navega a
 // /auth/hubspot/login y vuelve con la sesion ya puesta en cookies httpOnly, igual que el SSO de
 // Microsoft. HubSpot solo IDENTIFICA a la persona aqui: el usuario tiene que existir ya en
-// `usuarios` (lo crea un administrador). Los tokens de HubSpot NO se guardan todavia; cuando un
-// modulo necesite llamar a HubSpot en nombre del usuario se decide donde y como persistirlos.
+// `usuarios` (lo crea un administrador). Los tokens de HubSpot se guardan cifrados en `hubspot_tokens`
+// (ver modules/hubspot) para poder llamar a HubSpot en nombre del usuario.
 const crypto = require('crypto');
 const asyncHandler = require('../../utils/asyncHandler');
 const {
@@ -16,6 +16,9 @@ const {
 } = require('../../utils/security');
 const Usuario = require('../usuario/usuario.model');
 const usuarioService = require('../usuario/usuario.service');
+const hubspotService = require('../hubspot/hubspot.service');
+
+const { API_URL } = hubspotService;
 
 // `secure` solo si la app se sirve por HTTPS (FRONTEND_URL): con una URL http de pruebas el navegador descartaria la cookie.
 const COOKIE_BASE = {
@@ -54,7 +57,7 @@ async function intercambiarCodigo(code) {
     redirect_uri: REDIRECT_URI,
     code,
   });
-  const res = await fetch('https://api.hubapi.com/oauth/v1/token', {
+  const res = await fetch(`${API_URL}/oauth/v1/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
@@ -65,7 +68,7 @@ async function intercambiarCodigo(code) {
 
 // Devuelve { email, userId } de quien autorizo el token.
 async function leerIdentidad(accessToken) {
-  const res = await fetch(`https://api.hubapi.com/oauth/v1/access-tokens/${encodeURIComponent(accessToken)}`);
+  const res = await fetch(`${API_URL}/oauth/v1/access-tokens/${encodeURIComponent(accessToken)}`);
   if (!res.ok) throw new Error(`HubSpot access-tokens ${res.status}`);
   const info = await res.json();
   return { email: String(info.user ?? '').toLowerCase(), userId: info.user_id != null ? String(info.user_id) : null };
@@ -78,8 +81,9 @@ const callback = asyncHandler(async (req, res) => {
   if (error || !code || !state || !stateEsperado || state !== stateEsperado) return irAlLogin(res, 'HubSpotError');
 
   let identidad;
+  let tokens;
   try {
-    const tokens = await intercambiarCodigo(code);
+    tokens = await intercambiarCodigo(code);
     identidad = await leerIdentidad(tokens.access_token);
   } catch (err) {
     console.error('[hubspot] login fallido:', err.message);
@@ -98,6 +102,13 @@ const callback = asyncHandler(async (req, res) => {
   if (!usuario.activo) return irAlLogin(res, 'HubSpotAccountInactive');
 
   await usuario.update({ hubspot_user_id: identidad.userId, hubspot_email: identidad.email });
+  // Los tokens se guardan cifrados: el Cotizador los usa despues, via /api/hubspot, para llamar a HubSpot como este usuario.
+  try {
+    await hubspotService.guardarTokens(usuario.id, tokens);
+  } catch (err) {
+    console.error('[hubspot] no se pudieron guardar los tokens:', err.message);
+    return irAlLogin(res, 'HubSpotError');
+  }
   await usuarioService.registrarConexion(usuario);
 
   res.clearCookie(HUBSPOT_STATE_COOKIE_NAME);
