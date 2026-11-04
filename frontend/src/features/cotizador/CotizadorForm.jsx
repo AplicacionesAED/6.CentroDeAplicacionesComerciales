@@ -642,7 +642,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   // ─── Pasos ───
   // Todos los paneles siguen montados y solo se oculta el de los pasos inactivos,
   // así ningún selector/calculadora pierde su estado al navegar entre pasos.
-  const pasos = ['Inmueble', 'Espacios adicionales', 'Condiciones', 'Plan de pagos', 'Revisión y generación'];
+  const pasos = ['Inmueble', 'Accesorios Inmobiliarios', 'Condiciones', 'Plan de pagos', 'Revisión y generación'];
   const esUltimoPaso = paso === pasos.length - 1;
   // Sin inmueble elegido no hay nada que configurar: solo el paso 1 es alcanzable.
   const puedeIrAPaso = (i) => i === 0 || selectedUnit !== null;
@@ -699,7 +699,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
             el "chrome" visual para 3 selectores que en el fondo son la misma cosa). */}
           {selectedUnit && towerObjectId ? (
             <div className={styles.card}>
-              <h3 className={styles.cardTitle}>Espacios adicionales</h3>
+              <h3 className={styles.cardTitle}>Accesorios Inmobiliarios</h3>
               <ParkingSelector parking={parkingOptions} loading={parkingLoading} selected={selectedParking} onSelect={setSelectedParking} kind="parqueadero" />
               <ParkingSelector parking={depositoOptions} loading={parkingLoading} selected={selectedDeposito} onSelect={setSelectedDeposito} kind="deposito" />
               <ParkingSelector
@@ -711,7 +711,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
               />
             </div>
           ) : (
-            <p className={styles.vacio}>Este inmueble no tiene espacios adicionales disponibles para seleccionar.</p>
+            <p className={styles.vacio}>Este inmueble no tiene accesorios inmobiliarios disponibles para seleccionar.</p>
           )}
         </div>
 
