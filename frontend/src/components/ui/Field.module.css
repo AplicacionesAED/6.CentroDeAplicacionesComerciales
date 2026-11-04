@@ -96,38 +96,3 @@ select.control:disabled {
   font-size: var(--text-data-size);
   color: var(--color-danger-ink);
 }
-
-/* --- Propio de Solicitudes: <Textarea> que crece solo, sin resize manual ----------------------
-   El HRMS no define padding vertical para un textarea (su `.control` es `padding: 0 14px` con
-   min-height), asi que aqui se le da el mismo respiro que a un input de 44px. El `::after` repite a
-   proposito el MISMO padding/borde/fuente/interlineado que el <textarea>: si no calzan exacto, el
-   texto envuelve distinto ahi y el alto medido queda mal. */
-textarea.control {
-  padding: 11px 14px;
-  line-height: var(--text-body-line);
-  letter-spacing: inherit;
-}
-
-.growWrap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.growWrap::after {
-  content: attr(data-replicated-value) ' ';
-  white-space: pre-wrap;
-  word-break: break-word;
-  visibility: hidden;
-  grid-area: 1 / 1 / 2 / 2;
-  font-family: var(--font-body);
-  font-size: var(--text-body-size);
-  line-height: var(--text-body-line);
-  padding: 11px 14px;
-  border: 1px solid transparent;
-}
-
-.growWrap > textarea {
-  grid-area: 1 / 1 / 2 / 2;
-  resize: none;
-  overflow: hidden;
-}

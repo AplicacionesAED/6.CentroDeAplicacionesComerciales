@@ -9,23 +9,6 @@ async function proyectosAsignados(usuarioId) {
   return filas.map((f) => f.proyecto);
 }
 
-async function misProyectos(usuario) {
-  return { isAdmin: Boolean(usuario.esAdmin), projects: await proyectosAsignados(usuario.id) };
-}
-
-// Todos los asesores con al menos una asignacion: [{ usuarioId, email, nombre, projects }].
-async function listar() {
-  const filas = await AsesorProyecto.findAll({ include: [{ model: Usuario, attributes: ['id', 'email', 'nombre'] }], order: [['usuario_id', 'ASC']] });
-  const porUsuario = new Map();
-  for (const fila of filas) {
-    if (!porUsuario.has(fila.usuario_id)) {
-      porUsuario.set(fila.usuario_id, { usuarioId: fila.usuario_id, email: fila.Usuario.email, nombre: fila.Usuario.nombre, projects: [] });
-    }
-    porUsuario.get(fila.usuario_id).projects.push(fila.proyecto);
-  }
-  return { assignments: [...porUsuario.values()] };
-}
-
 // Reemplaza el conjunto completo de proyectos del asesor. [] lo deja sin restriccion.
 async function asignar(usuarioId, projects) {
   if (!(await Usuario.findByPk(usuarioId))) throw new ApiError(404, 'Usuario no encontrado');
@@ -39,4 +22,4 @@ async function asignar(usuarioId, projects) {
   return { ok: true };
 }
 
-module.exports = { proyectosAsignados, misProyectos, listar, asignar };
+module.exports = { proyectosAsignados, asignar };

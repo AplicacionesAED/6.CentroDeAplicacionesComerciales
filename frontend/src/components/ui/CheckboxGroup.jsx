@@ -2,9 +2,7 @@
 // permisos por rol, un multi-rol en un formulario de usuario) -- reemplaza
 // el patron de un parrafo de checkboxes en flujo libre envueltos por ancho
 // de pantalla, que es ilegible apenas pasan de 4-5 opciones y no tiene
-// ninguna jerarquia visual. Para una lista LARGA o que necesita
-// busqueda/agrupar, usa CheckboxListSelect.jsx en vez de esto -- ver la
-// regla "Selección de uno a muchos" en DESIGN.md.
+// ninguna jerarquia visual.
 //
 // `options`: [{ value, label }]. `value`: array de values seleccionados.
 // `selectAllLabel`: opcional -- si se pasa, agrega un checkbox "Seleccionar

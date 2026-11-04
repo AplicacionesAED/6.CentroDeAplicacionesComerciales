@@ -198,10 +198,6 @@ export async function saveProjectConfig(project, config) {
   await client.put(`/configuracion/proyectos/${project}`, { config });
 }
 
-export async function fetchMyProjects() {
-  const { data } = await client.get('/asesores/mis-proyectos');
-  return data;
-}
 
 // ── Anexos de una cotizacion aceptada ──
 

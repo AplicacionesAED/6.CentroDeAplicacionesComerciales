@@ -1,10 +1,8 @@
 // requireAuth va PRIMERO en toda ruta protegida (incluidas las de solo
-// lectura). requireAdmin/requirePermiso van DESPUÉS, solo en
-// escrituras/rutas restringidas. El rol/los permisos SIEMPRE se re-leen de la
+// lectura). requireAdmin va DESPUÉS, solo en escrituras/rutas restringidas. El rol/los permisos SIEMPRE se re-leen de la
 // BD en requireAuth (nunca del claim del JWT), así un token manipulado no
 // puede escalar privilegios -- ver createAccessToken en utils/security.js.
 const { decodeToken, ACCESS_COOKIE_NAME } = require('../utils/security');
-const { tienePermiso, getRolesFuncionalidades } = require('../utils/permisos');
 const ApiError = require('../utils/ApiError');
 const Usuario = require('../modules/usuario/usuario.model');
 const Rol = require('../modules/rol/rol.model');
@@ -47,18 +45,4 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Exige que el usuario tenga AL MENOS UNO de los slugs dados (por su rol, por
-// funcionalidades_adicionales o por ser admin). Uso: requirePermiso('slug') o requirePermiso(['a', 'b']).
-function requirePermiso(slugs) {
-  const requeridos = Array.isArray(slugs) ? slugs : [slugs];
-  return async (req, res, next) => {
-    const roles = req.usuario?.roles ?? [];
-    const funcionalidadesAdicionales = req.usuario?.funcionalidades_adicionales ?? [];
-    const funcionalidadesPorRol = await getRolesFuncionalidades();
-    const tiene = requeridos.some((slug) => tienePermiso(roles, funcionalidadesAdicionales, slug, funcionalidadesPorRol, req.usuario?.esAdmin));
-    if (!tiene) return next(new ApiError(403, 'No tienes permiso para realizar esta acción'));
-    next();
-  };
-}
-
-module.exports = { requireAuth, requireAdmin, requirePermiso };
+module.exports = { requireAuth, requireAdmin };

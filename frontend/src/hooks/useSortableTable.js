@@ -52,8 +52,3 @@ export function useSortableTable(rows, valueGetters) {
 
   return { sortedRows, sort, toggleSort };
 }
-
-export function ariaSort(sort, key) {
-  if (sort.key !== key) return 'none';
-  return sort.direction === 'asc' ? 'ascending' : 'descending';
-}

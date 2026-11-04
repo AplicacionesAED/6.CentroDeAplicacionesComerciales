@@ -8,8 +8,6 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-router.get('/mis-proyectos', controller.misProyectos);
-router.get('/', requireAdmin, controller.listar);
 router.put('/:usuarioId', requireAdmin, validate(usuarioParamsSchema, 'params'), validate(asignarSchema, 'body'), controller.asignar);
 
 module.exports = router;
