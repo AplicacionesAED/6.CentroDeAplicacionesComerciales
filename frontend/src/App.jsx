@@ -9,7 +9,7 @@ import SeguimientoPage from './features/seguimiento/SeguimientoPage.jsx';
 import QuoteDetailPage from './features/seguimiento/QuoteDetailPage.jsx';
 import TramitesPage from './features/tramites/TramitesPage.jsx';
 import InventarioPage from './features/inventario/InventarioPage.jsx';
-import { PendientePage } from './features/PendientePage.jsx';
+import DocumentacionPage from './features/documentacion/DocumentacionPage.jsx';
 
 export default function App() {
   return (
@@ -24,7 +24,7 @@ export default function App() {
           <Route path="seguimiento" element={<SeguimientoPage />} />
           <Route path="seguimiento/:quoteId" element={<QuoteDetailPage />} />
           <Route path="tramites" element={<TramitesPage />} />
-          <Route path="documentacion" element={<PendientePage titulo="Documentación" />} />
+          <Route path="documentacion" element={<DocumentacionPage />} />
           <Route element={<ProtectedRoute soloAdmin />}>
             <Route path="inventario" element={<InventarioPage />} />
             <Route path="configuracion" element={<ConfiguracionPage />} />
