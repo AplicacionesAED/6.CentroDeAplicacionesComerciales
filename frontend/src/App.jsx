@@ -5,6 +5,8 @@ import { LoginPage } from './features/auth/LoginPage.jsx';
 import { CambiarPasswordPage } from './features/auth/CambiarPasswordPage.jsx';
 import CotizadorPage from './features/cotizador/CotizadorPage.jsx';
 import ConfiguracionPage from './features/configuracion/ConfiguracionPage.jsx';
+import SeguimientoPage from './features/seguimiento/SeguimientoPage.jsx';
+import QuoteDetailPage from './features/seguimiento/QuoteDetailPage.jsx';
 import { PendientePage } from './features/PendientePage.jsx';
 
 export default function App() {
@@ -17,7 +19,8 @@ export default function App() {
           <Route index element={<Navigate to="/cotizador" replace />} />
           <Route path="cotizador" element={<CotizadorPage />} />
           <Route path="cotizador/:dealId" element={<CotizadorPage />} />
-          <Route path="seguimiento" element={<PendientePage titulo="Seguimiento" />} />
+          <Route path="seguimiento" element={<SeguimientoPage />} />
+          <Route path="seguimiento/:quoteId" element={<QuoteDetailPage />} />
           <Route path="tramites" element={<PendientePage titulo="Trámites" />} />
           <Route path="documentacion" element={<PendientePage titulo="Documentación" />} />
           <Route element={<ProtectedRoute soloAdmin />}>

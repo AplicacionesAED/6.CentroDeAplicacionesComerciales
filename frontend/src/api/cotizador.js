@@ -1,7 +1,7 @@
 // Llamadas del Cotizador al backend. La sesion viaja en cookies (client.js): ninguna funcion recibe un token de
 // HubSpot. Lo que sale de /hubspot/* es la respuesta cruda de HubSpot (por eso `getRaw`/`postRaw`); el resto
 // llega dentro de `{ data }` y client.js ya lo desenvuelve.
-import client from './client.js';
+import client, { API_BASE_URL } from './client.js';
 
 const PROPIEDADES_UNIDAD = [
   'id_unidad', 'torre', 'piso', 'codigo_unidad', 'valor_unidad_comercial', 'valor_m_comercial', 'built_area_m2', 'view_type',
@@ -202,3 +202,30 @@ export async function fetchMyProjects() {
   const { data } = await client.get('/asesores/mis-proyectos');
   return data;
 }
+
+// ── Anexos de una cotizacion aceptada ──
+
+// { nombre, plano } del accesorio (parqueadero): `plano` es la URL de la imagen o null.
+export async function fetchAccesorioPlano(id) {
+  const { data } = await client.get(`/anexos/accesorios/${id}/plano`);
+  return data;
+}
+
+// URL del plano de piso sombreado de la unidad (en vivo) o null.
+export async function fetchPlanoSombreado(unitId) {
+  const { data } = await client.get(`/anexos/unidades/${unitId}/plano-sombreado`);
+  return data.plano_piso_sombreado;
+}
+
+export async function fetchDirectorProyecto(proyecto) {
+  const { data } = await client.get(`/anexos/proyectos/${encodeURIComponent(proyecto)}/director`);
+  return data.director;
+}
+
+// PDF fijo del paquete de anexos ('especificaciones-oliv' o 'cartilla-negocios-fiduciarios').
+export function fetchAnexoEstatico(nombre) {
+  return client.getBinary(`/anexos/archivo/${nombre}`);
+}
+
+// URL del PDF de una cotizacion (se abre en otra pestana; la sesion viaja en la cookie).
+export const urlPdfCotizacion = (id) => `${API_BASE_URL}/cotizaciones/${id}/pdf`;

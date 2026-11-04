@@ -78,6 +78,12 @@ const client = {
   patch: (path, body) => request(path, { method: 'PATCH', body: body !== undefined ? JSON.stringify(body) : undefined }),
   delete: (path) => request(path, { method: 'DELETE' }),
   upload: (path, formData) => request(path, { method: 'POST', body: formData }),
+  // Respuesta binaria (PDF): devuelve el ArrayBuffer.
+  getBinary: async (path) => {
+    const res = await fetch(`${API_BASE_URL}${path}`, { credentials: 'include' });
+    if (!res.ok) throw new ApiRequestError('No se pudo descargar el archivo', res.status);
+    return res.arrayBuffer();
+  },
   getRaw: (path) => request(path, { method: 'GET', raw: true }),
   postRaw: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body), raw: true }),
 };
