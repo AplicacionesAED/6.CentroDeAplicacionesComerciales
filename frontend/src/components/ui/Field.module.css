@@ -1,0 +1,133 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--color-ink-secondary);
+}
+
+.required {
+  color: var(--color-danger-ink);
+  margin-left: 2px;
+}
+
+/* 2026-10-20, pedido explícito del usuario ("la interfaz no dice dónde
+   debemos escribir"): antes un campo vacío era fondo blanco + borde de 20%
+   de mezcla sobre una tarjeta CASI del mismo blanco (--color-surface, 3%) --
+   el contorno era lo único que lo distinguía de texto plano, y se perdía a
+   simple vista. Ahora el campo tiene fondo PROPIO (surface-sunken, el mismo
+   tono ya usado para filas zebra/hover) + un borde más oscuro
+   (--color-border-input, nuevo, ver tokens.css) -- entre las dos cosas se
+   lee como "una caja", no hace falta entrecerrar los ojos para encontrar el
+   contorno. Al enfocar, el fondo pasa a blanco puro (contraste con los
+   campos vecinos todavía sin tocar: cuál es "el que estoy llenando ahora").
+*/
+.control {
+  font-family: var(--font-body);
+  font-size: var(--text-body-size);
+  color: var(--color-ink);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  padding: 0 14px;
+  transition: background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.control:hover {
+  border-color: var(--color-primary);
+}
+
+.control:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.control:disabled {
+  color: var(--color-ink-muted);
+  cursor: not-allowed;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.invalid {
+  border-color: var(--color-danger-ink);
+}
+
+/* `<select>` sin esto renderiza con el chrome nativo del SO (flecha +
+   padding interno propios), que en Windows/Chrome le resta alto real al
+   control frente a un `<input>` con el mismo padding en la caja -- se veian
+   mas bajos que el resto de los campos aunque comparten `.control`. Con
+   `appearance: none` se quita ese chrome y el select queda exactamente con
+   el mismo box-model (padding+borde) que un input; la flecha se repone a
+   mano con un SVG de marca en vez de la del SO, mismo espiritu que el resto
+   del sistema de diseño (nada de gris generico del navegador). */
+select.control {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3.5 5.25L7 8.75L10.5 5.25' stroke='%23232bed' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+
+select.control:disabled {
+  cursor: not-allowed;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='M3.5 5.25L7 8.75L10.5 5.25' stroke='%23767f91' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.helper {
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+.error {
+  font-size: var(--text-data-size);
+  color: var(--color-danger-ink);
+}
+
+/* --- Propio de Solicitudes: <Textarea> que crece solo, sin resize manual ----------------------
+   El HRMS no define padding vertical para un textarea (su `.control` es `padding: 0 14px` con
+   min-height), asi que aqui se le da el mismo respiro que a un input de 44px. El `::after` repite a
+   proposito el MISMO padding/borde/fuente/interlineado que el <textarea>: si no calzan exacto, el
+   texto envuelve distinto ahi y el alto medido queda mal. */
+textarea.control {
+  padding: 11px 14px;
+  line-height: var(--text-body-line);
+  letter-spacing: inherit;
+}
+
+.growWrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.growWrap::after {
+  content: attr(data-replicated-value) ' ';
+  white-space: pre-wrap;
+  word-break: break-word;
+  visibility: hidden;
+  grid-area: 1 / 1 / 2 / 2;
+  font-family: var(--font-body);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+  padding: 11px 14px;
+  border: 1px solid transparent;
+}
+
+.growWrap > textarea {
+  grid-area: 1 / 1 / 2 / 2;
+  resize: none;
+  overflow: hidden;
+}
