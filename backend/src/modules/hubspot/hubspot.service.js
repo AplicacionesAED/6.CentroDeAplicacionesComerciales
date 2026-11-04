@@ -36,14 +36,40 @@ async function pedirTokens(params) {
       ...params,
     }),
   });
-  if (!res.ok) throw new Error(`HubSpot token ${res.status}`);
+  if (!res.ok) {
+    const err = new Error(`HubSpot token ${res.status}`);
+    // 400/401/403: HubSpot rechaza el refresh token (revocado o app desinstalada) y solo reconectando se arregla.
+    // Cualquier otro codigo (429, 5xx) es pasajero.
+    err.definitivo = [400, 401, 403].includes(res.status);
+    throw err;
+  }
   return res.json();
 }
 
+const INTENTOS_REFRESH = 3;
+
+// Renueva el access token. Un fallo pasajero (red, 429, 5xx) se reintenta; solo uno definitivo pide reconectar.
 async function refrescar(registro) {
-  const tokens = await pedirTokens({ grant_type: 'refresh_token', refresh_token: descifrar(registro.refresh_token_cifrado) });
-  await guardarTokens(registro.usuario_id, tokens);
-  return tokens.access_token;
+  let refreshToken;
+  try {
+    refreshToken = descifrar(registro.refresh_token_cifrado);
+  } catch (e) {
+    e.definitivo = true; // guardado con otra HUBSPOT_TOKEN_KEY o corrupto
+    throw e;
+  }
+  let ultimo;
+  for (let intento = 1; intento <= INTENTOS_REFRESH; intento++) {
+    try {
+      const tokens = await pedirTokens({ grant_type: 'refresh_token', refresh_token: refreshToken });
+      await guardarTokens(registro.usuario_id, tokens);
+      return tokens.access_token;
+    } catch (e) {
+      if (e.definitivo) throw e;
+      ultimo = e;
+      if (intento < INTENTOS_REFRESH) await new Promise((r) => setTimeout(r, 500 * intento));
+    }
+  }
+  throw ultimo;
 }
 
 // Devuelve un access token vigente. 409 si el usuario nunca conecto HubSpot o el refresh fallo.
@@ -64,8 +90,10 @@ async function obtenerAccessToken(usuarioId, { forzarRefresh = false } = {}) {
     refrescando.set(
       usuarioId,
       refrescar(registro)
-        .catch(() => {
-          throw new ApiError(409, 'La conexión con HubSpot venció. Vuelve a conectarla.', { codigo: 'HUBSPOT_NO_CONECTADO' });
+        .catch((e) => {
+          console.error(`[hubspot] no se pudo renovar el token del usuario ${usuarioId}:`, e.message); // eslint-disable-line no-console
+          if (e.definitivo) throw new ApiError(409, 'La conexión con HubSpot venció. Vuelve a conectarla.', { codigo: 'HUBSPOT_NO_CONECTADO' });
+          throw new ApiError(503, 'No se pudo renovar la conexión con HubSpot. Intenta de nuevo en unos segundos.');
         })
         .finally(() => refrescando.delete(usuarioId))
     );
