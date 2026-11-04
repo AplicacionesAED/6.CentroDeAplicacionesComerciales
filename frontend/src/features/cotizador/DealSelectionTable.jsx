@@ -1,9 +1,11 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { CircleAlert, Layers, ArrowUpDown, RefreshCw, Search, Flag } from 'lucide-react';
 import { Pagination } from '../../components/ui/Pagination.jsx';
-import { CircleAlert, Info, RefreshCw, Search, X } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Button } from '../../components/ui/Button.jsx';
+import { Field, TextInput, Select } from '../../components/ui/Field.jsx';
+import { MultiSelect } from '../../components/ui/MultiSelect.jsx';
+import lista from '../../components/ui/Lista.module.css';
 import styles from './DealSelectionTable.module.css';
 const PAGE_SIZE = 20;
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -34,43 +36,11 @@ function stageVariant(stage) {
   if (s.includes('contact') || s.includes('prospect') || s.includes('primer')) return 'info';
   return 'neutral';
 }
-// ─── Tooltip (portal-based to escape overflow clipping) ──────────────────────
-function Tooltip({ text, children }) {
-  const [pos, setPos] = useState(null);
-  const ref = useRef(null);
-  const show = useCallback(() => {
-    if (!ref.current) return;
-    const r = ref.current.getBoundingClientRect();
-    setPos({ x: r.left + r.width / 2, y: r.top });
-  }, []);
-  const hide = useCallback(() => setPos(null), []);
-  return (
-    <span ref={ref} style={{ display: 'inline-flex', alignItems: 'center' }} onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
-      {children}
-      {pos &&
-        createPortal(
-          <span role="tooltip" className={`aed-chrome ${styles.burbuja}`} style={{ left: pos.x, top: pos.y - 8, transform: 'translate(-50%, -100%)' }}>
-            {text}
-          </span>,
-          document.body
-        )}
-    </span>
-  );
-}
-function InfoIcon({ tip }) {
-  return (
-    <Tooltip text={tip}>
-      <span className={styles.infoDisparador} tabIndex={0} aria-label={tip}>
-        <Info size={14} strokeWidth={1.75} aria-hidden="true" />
-      </span>
-    </Tooltip>
-  );
-}
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DealSelectionTable({ deals, loading, error, onSelect, onRefresh }) {
   const [search, setSearch] = useState('');
-  const [stageFilter, setStageFilter] = useState('');
-  const [projectFilter, setProjectFilter] = useState('');
+  const [stageFilter, setStageFilter] = useState([]);
+  const [projectFilter, setProjectFilter] = useState([]);
   const [sort, setSort] = useState('actividad');
   const [page, setPage] = useState(1);
   // Unique stage and project options extracted from deal list
@@ -90,8 +60,8 @@ export default function DealSelectionTable({ deals, loading, error, onSelect, on
         (d) => d.dealname?.toLowerCase().includes(q) || d.nombre_contacto?.toLowerCase().includes(q) || d.proyecto_inmobiliario_cac?.toLowerCase().includes(q)
       );
     }
-    if (stageFilter) result = result.filter((d) => d.dealstage === stageFilter);
-    if (projectFilter) result = result.filter((d) => d.proyecto_inmobiliario_cac === projectFilter);
+    if (stageFilter.length) result = result.filter((d) => stageFilter.includes(d.dealstage));
+    if (projectFilter.length) result = result.filter((d) => projectFilter.includes(d.proyecto_inmobiliario_cac));
     return [...result].sort((a, b) => {
       if (sort === 'nombre') return (a.dealname || '').localeCompare(b.dealname || '', 'es');
       if (sort === 'fecha') return new Date(b.createdate || 0).getTime() - new Date(a.createdate || 0).getTime();
@@ -108,11 +78,12 @@ export default function DealSelectionTable({ deals, loading, error, onSelect, on
     const start = (page - 1) * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);
   }, [filtered, page]);
-  const activeFilters = [stageFilter, projectFilter].filter(Boolean).length;
+  const activeFilters = Number(stageFilter.length > 0) + Number(projectFilter.length > 0);
+  const hayFiltros = Boolean(search.trim()) || activeFilters > 0;
   const limpiarFiltros = () => {
     setSearch('');
-    setStageFilter('');
-    setProjectFilter('');
+    setStageFilter([]);
+    setProjectFilter([]);
   };
   // ─── Loading ───
   if (loading && deals.length === 0) {
@@ -139,265 +110,144 @@ export default function DealSelectionTable({ deals, loading, error, onSelect, on
     );
   }
   return (
-    <div className={styles.root}>
-      {/* ── Header ── */}
-      <div className={styles.head}>
+    <div className={lista.page}>
+      <header className={lista.header}>
         <div>
-          <h2 className={styles.title}>Seleccionar negocio</h2>
-          <p className={styles.subtitle}>Elige el negocio para el que quieres generar una cotización</p>
+          <h1 className={lista.title}>Seleccionar negocio</h1>
+          <p className={lista.subtitle}>
+            Elige el negocio para el que quieres generar una cotización · {filtered.length} de {deals.length} negocio{deals.length !== 1 ? 's' : ''}
+          </p>
         </div>
-
-        <div className={styles.headAcciones}>
-          {/* Sort selector */}
-          <Tooltip text="Elige cómo ordenar la lista de negocios">
-            <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Ordenar negocios" className={`${styles.control} ${styles.select}`}>
-              <option value="actividad">Más reciente primero</option>
-              <option value="fecha">Por fecha de creación</option>
-              <option value="nombre">Nombre A → Z</option>
-            </select>
-          </Tooltip>
-
-          {/* Refresh */}
-          <Tooltip text="Sincroniza la lista con HubSpot para ver cambios recientes">
-            <Button variant="secondary" onClick={onRefresh} disabled={loading}>
-              <RefreshCw className={loading ? styles.girando : ''} size={16} strokeWidth={1.75} aria-hidden="true" />
+        <div className={lista.acciones}>
+          <Button variant="secondary" onClick={onRefresh} disabled={loading} title="Sincroniza la lista con HubSpot para ver cambios recientes">
+            <span className={lista.botonInterior}>
+              <RefreshCw className={loading ? lista.spin : undefined} size={16} strokeWidth={1.75} aria-hidden="true" />
               Refrescar
-            </Button>
-          </Tooltip>
+            </span>
+          </Button>
         </div>
-      </div>
+      </header>
 
-      {/* ── Search ── */}
-      <div className={styles.buscar}>
-        <Search className={styles.buscarIcono} size={16} strokeWidth={1.75} aria-hidden="true" />
-        <input
-          type="text"
-          placeholder="Buscar por nombre del negocio, contacto o proyecto…"
-          aria-label="Buscar negocios"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={`${styles.control} ${styles.buscarInput}`}
-        />
-        {search && (
-          <button type="button" onClick={() => setSearch('')} className={styles.buscarLimpiar} aria-label="Borrar búsqueda">
-            <X size={16} strokeWidth={1.75} aria-hidden="true" />
+      <div className={lista.filtros}>
+        <div className={lista.filtroBusqueda}>
+          <Field label={<span className={lista.labelConIcono}><Search size={13} />Buscar</span>}>
+            {(p) => <TextInput {...p} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Negocio, contacto o proyecto…" />}
+          </Field>
+        </div>
+        {stages.length > 1 && (
+          <Field label={<span className={lista.labelConIcono}><Flag size={13} />Etapa</span>}>
+            {(p) => <MultiSelect {...p} options={stages} value={stageFilter} onChange={setStageFilter} placeholder="Todas las etapas" />}
+          </Field>
+        )}
+        {projects.length > 1 && (
+          <Field label={<span className={lista.labelConIcono}><Layers size={13} />Proyecto</span>}>
+            {(p) => <MultiSelect {...p} options={projects} value={projectFilter} onChange={setProjectFilter} placeholder="Todos los proyectos" />}
+          </Field>
+        )}
+        <Field label={<span className={lista.labelConIcono}><ArrowUpDown size={13} />Ordenar por</span>}>
+          {(p) => (
+            <Select {...p} value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="actividad">Más reciente primero</option>
+              <option value="fecha">Fecha de creación</option>
+              <option value="nombre">Nombre A → Z</option>
+            </Select>
+          )}
+        </Field>
+        {hayFiltros && (
+          <button type="button" className={lista.limpiar} onClick={limpiarFiltros}>
+            Limpiar filtros
           </button>
         )}
       </div>
 
-      {/* ── Filter chips ── */}
-      {(stages.length > 1 || projects.length > 1) && (
-        <div className={styles.filtros}>
-          {/* Stage filters */}
-          {stages.length > 1 && (
-            <div className={styles.filtroFila}>
-              <span className={styles.filtroLabel}>
-                Etapa
-                <InfoIcon tip="Filtra los negocios por la etapa en que se encuentran dentro del pipeline de ventas" />
-              </span>
-              <button type="button" onClick={() => setStageFilter('')} className={`${styles.chip} ${!stageFilter ? styles.chipActivo : ''}`}>
-                Todas
-              </button>
-              {stages.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setStageFilter(stageFilter === s ? '' : s)}
-                  className={`${styles.chip} ${stageFilter === s ? styles.chipActivo : ''}`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Project filters */}
-          {projects.length > 1 && (
-            <div className={styles.filtroFila}>
-              <span className={styles.filtroLabel}>
-                Proyecto
-                <InfoIcon tip="Filtra los negocios por el proyecto inmobiliario de interés del cliente" />
-              </span>
-              <button type="button" onClick={() => setProjectFilter('')} className={`${styles.chip} ${!projectFilter ? styles.chipActivo : ''}`}>
-                Todos
-              </button>
-              {projects.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setProjectFilter(projectFilter === p ? '' : p)}
-                  className={`${styles.chip} ${projectFilter === p ? styles.chipActivo : ''}`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Active filter banner ── */}
-      {(activeFilters > 0 || search) && (
-        <div className={styles.aviso} role="status">
-          <span>
-            Mostrando {filtered.length} de {deals.length} negocios
-            {activeFilters > 0 && ` · ${activeFilters} filtro${activeFilters > 1 ? 's' : ''} activo${activeFilters > 1 ? 's' : ''}`}
-          </span>
-          <button type="button" onClick={limpiarFiltros} className={styles.enlace}>
-            Limpiar filtros
-          </button>
-        </div>
-      )}
-
-      {/* ── Table ── */}
-      <div className={styles.card}>
-        <div className={styles.scroll}>
-          <table className={styles.tabla}>
-            <thead>
+      <div className={lista.tableWrap}>
+        <table className={`${lista.table} ${styles.tabla}`}>
+          <thead>
+            <tr>
+              <th>Negocio / Contacto</th>
+              <th>Proyecto</th>
+              <th>Etapa</th>
+              <th>Última cotización</th>
+              <th>Actividad HubSpot</th>
+              <th className={lista.derecha}>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
               <tr>
-                <th>
-                  <span className={styles.thContenido}>
-                    Negocio / Contacto
-                    <InfoIcon tip="Nombre del negocio en HubSpot y el nombre del contacto asociado" />
-                  </span>
-                </th>
-                <th>
-                  <span className={styles.thContenido}>
-                    Proyecto
-                    <InfoIcon tip="Proyecto inmobiliario de interés registrado en el negocio" />
-                  </span>
-                </th>
-                <th>
-                  <span className={styles.thContenido}>
-                    Etapa
-                    <InfoIcon tip="Etapa actual del negocio dentro del pipeline de ventas de HubSpot" />
-                  </span>
-                </th>
-                <th>
-                  <span className={styles.thContenido}>
-                    Última cotización
-                    <InfoIcon tip="Cuándo se generó la última cotización para este negocio en esta app. El número indica cuántas cotizaciones tiene registradas." />
-                  </span>
-                </th>
-                <th>
-                  <span className={styles.thContenido}>
-                    Actividad HubSpot
-                    <InfoIcon tip="Última actividad registrada en HubSpot para este negocio (llamadas, emails, reuniones, etc.)" />
-                  </span>
-                </th>
-                <th className={styles.derecha}>
-                  <span className={styles.thContenido}>
-                    Valor
-                    <InfoIcon tip="Valor total del negocio registrado en HubSpot" />
-                  </span>
-                </th>
+                <td colSpan={6} className={lista.mensaje}>
+                  {hayFiltros ? 'Sin resultados para los filtros aplicados.' : 'No tienes negocios asignados.'}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className={styles.vacioFila}>
-                    <div className={styles.vacio}>
-                      <span className={styles.vacioIcono}>
-                        <Search size={20} strokeWidth={1.5} aria-hidden="true" />
-                      </span>
-                      <p>{search || activeFilters > 0 ? 'No hay negocios con esos filtros' : 'No tienes negocios asignados'}</p>
-                      {(search || activeFilters > 0) && (
-                        <button type="button" onClick={limpiarFiltros} className={styles.enlace}>
-                          Limpiar filtros
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginated.map((deal) => {
-                  const hasQuotes = (deal.quoteCount ?? 0) > 0;
-                  return (
-                    <tr
-                      key={deal.id}
-                      onClick={() => onSelect(deal)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') onSelect(deal);
-                      }}
-                      tabIndex={0}
-                      className={styles.fila}
-                    >
-                      {/* Negocio / Contacto */}
-                      <td>
-                        <div className={styles.negocio}>
-                          {/* Punto: verde si tiene cotización aceptada, azul si tiene cotizaciones, gris si no */}
-                          <span className={`${styles.punto} ${deal.hasAccepted ? styles.puntoAceptada : hasQuotes ? styles.puntoCotizado : ''}`} />
-                          <div>
-                            <span className={styles.nombre}>{deal.dealname || '—'}</span>
-                            <span className={styles.contacto}>{deal.nombre_contacto || 'Sin contacto'}</span>
-                          </div>
+            ) : (
+              paginated.map((deal) => {
+                const hasQuotes = (deal.quoteCount ?? 0) > 0;
+                return (
+                  <tr
+                    key={deal.id}
+                    className={lista.filaClicable}
+                    onClick={() => onSelect(deal)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') onSelect(deal);
+                    }}
+                    tabIndex={0}
+                  >
+                    <td>
+                      <div className={styles.negocio}>
+                        <span className={`${styles.punto} ${deal.hasAccepted ? styles.puntoAceptada : hasQuotes ? styles.puntoCotizado : ''}`} />
+                        <div className={lista.celdaTitulo}>
+                          <span className={lista.nombre}>{deal.dealname || '—'}</span>
+                          <span className={lista.detalleSec}>{deal.nombre_contacto || 'Sin contacto'}</span>
                         </div>
-                      </td>
+                      </div>
+                    </td>
+                    <td>{deal.proyecto_inmobiliario_cac || <span className={lista.muted}>—</span>}</td>
+                    <td>
+                      {deal.dealstage ? (
+                        <Badge variant={stageVariant(deal.dealstage)} dot>
+                          {deal.dealstage}
+                        </Badge>
+                      ) : (
+                        <span className={lista.muted}>—</span>
+                      )}
+                    </td>
+                    <td>
+                      {hasQuotes ? (
+                        <div>
+                          <span className={styles.destacado}>{relativeTime(deal.lastQuoteDate)}</span>
+                          <span className={styles.nota}>
+                            {deal.quoteCount} cotización{(deal.quoteCount ?? 0) > 1 ? 'es' : ''}
+                            {deal.hasAccepted && <span className={styles.notaExito}> · Aceptada</span>}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className={lista.muted}>Sin cotizaciones</span>
+                      )}
+                    </td>
+                    <td className={lista.muted}>{relativeTime(deal.lastActivityDate)}</td>
+                    <td className={`${lista.derecha} ${styles.destacado}`}>{formatCurrency(deal.amount)}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
 
-                      {/* Proyecto */}
-                      <td className={styles.muted}>{deal.proyecto_inmobiliario_cac || '—'}</td>
-
-                      {/* Etapa */}
-                      <td>
-                        {deal.dealstage ? (
-                          <Badge variant={stageVariant(deal.dealstage)} dot>
-                            {deal.dealstage}
-                          </Badge>
-                        ) : (
-                          <span className={styles.muted}>—</span>
-                        )}
-                      </td>
-
-                      {/* Última cotización (local) */}
-                      <td>
-                        {hasQuotes ? (
-                          <div>
-                            <span className={styles.destacado}>{relativeTime(deal.lastQuoteDate)}</span>
-                            <span className={styles.nota}>
-                              {deal.quoteCount} cotización{(deal.quoteCount ?? 0) > 1 ? 'es' : ''}
-                              {deal.hasAccepted && <span className={styles.notaExito}> · Aceptada</span>}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className={styles.muted}>Sin cotizaciones</span>
-                        )}
-                      </td>
-
-                      {/* Actividad HubSpot */}
-                      <td className={styles.muted}>{relativeTime(deal.lastActivityDate)}</td>
-
-                      {/* Valor */}
-                      <td className={`${styles.derecha} ${styles.destacado}`}>{formatCurrency(deal.amount)}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Table footer */}
         {filtered.length > 0 && (
-          <div className={styles.pie}>
-            <div className={styles.leyenda}>
-              <span className={styles.leyendaItem}>
-                <span className={`${styles.punto} ${styles.puntoAceptada}`} /> Cotización aceptada
-              </span>
-              <span className={styles.leyendaItem}>
-                <span className={`${styles.punto} ${styles.puntoCotizado}`} /> Con cotizaciones
-              </span>
-              <span className={styles.leyendaItem}>
-                <span className={styles.punto} /> Sin cotizaciones
-              </span>
-            </div>
-            <span>
-              {filtered.length} de {deals.length} negocio{deals.length !== 1 ? 's' : ''}
+          <div className={styles.leyenda}>
+            <span className={styles.leyendaItem}>
+              <span className={`${styles.punto} ${styles.puntoAceptada}`} /> Cotización aceptada
+            </span>
+            <span className={styles.leyendaItem}>
+              <span className={`${styles.punto} ${styles.puntoCotizado}`} /> Con cotizaciones
+            </span>
+            <span className={styles.leyendaItem}>
+              <span className={styles.punto} /> Sin cotizaciones
             </span>
           </div>
         )}
 
-        <Pagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+        {filtered.length > 0 && <Pagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />}
       </div>
 
       {loading && deals.length > 0 && (
