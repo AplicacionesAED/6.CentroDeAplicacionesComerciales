@@ -158,7 +158,8 @@ async function main() {
           deposito_name: c.deposito_name ?? null,
           cuarto_util_id: c.cuarto_util_id ?? null,
           cuarto_util_name: c.cuarto_util_name ?? null,
-          project: PROYECTOS.includes(c.project) ? c.project : null,
+          // Las cotizaciones anteriores a la columna `project` no la traen: se deduce del snapshot (negocio o unidad).
+          project: [c.project, snapshot?.deal?.proyecto_inmobiliario_cac, snapshot?.unit?.proyecto_inmobiliario].find((p) => PROYECTOS.includes(p)) ?? null,
           created_at: c.created_at,
         }
       );
