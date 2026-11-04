@@ -12,7 +12,10 @@ const app = express();
 
 // `exposedHeaders`: sin esto el navegador no deja leer `Content-Disposition` en un fetch
 // cross-origin, y las descargas autenticadas perderian su nombre real.
-app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true, exposedHeaders: ['Content-Disposition'] }));
+// Con credentials (cookies de sesion) el navegador rechaza un origen "*": hay que devolver el origen exacto.
+// Sin CORS_ORIGIN solo se aceptan origenes localhost (desarrollo, cualquier puerto de Vite); en produccion se define.
+const origenCors = process.env.CORS_ORIGIN || ((origin, cb) => cb(null, !origin || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)));
+app.use(cors({ origin: origenCors, credentials: true, exposedHeaders: ['Content-Disposition'] }));
 app.use(cookieParser());
 app.use(express.json());
 

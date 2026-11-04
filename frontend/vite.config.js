@@ -8,5 +8,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // Puerto fijo: el backend (FRONTEND_URL) y los redirects del SSO esperan este; si esta ocupado, falla en vez de moverse en silencio.
+    strictPort: true,
   },
 });
