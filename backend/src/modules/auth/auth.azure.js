@@ -1,0 +1,121 @@
+// SSO de Azure AD (Microsoft Entra) hecho a mano con @azure/msal-node -- la
+// plantilla no trae esto (next-auth lo resolvía en la app original vía
+// next-auth/providers/azure-ad, ver src/lib/auth.ts). Flujo de código de
+// autorización estándar (authorization code + PKCE no requerido para un
+// confidential client). Mismo comportamiento que el `signIn`/`jwt` callback
+// original: sin `microsoftId` vinculado -> OAuthAccountNotFound/OAuthNotLinked,
+// usuario inactivo -> OAuthAccountInactive, éxito -> mismas cookies de sesión
+// que el login por contraseña.
+const msal = require('@azure/msal-node');
+const asyncHandler = require('../../utils/asyncHandler');
+const { ACCESS_TOKEN_EXPIRE_HOURS, REFRESH_TOKEN_EXPIRE_DAYS, ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME, MS_LINK_INTENT_COOKIE_NAME, createAccessToken, createRefreshToken } = require('../../utils/security');
+const Usuario = require('../usuario/usuario.model');
+const usuarioService = require('../usuario/usuario.service');
+
+// `secure` solo si la app se sirve por HTTPS (FRONTEND_URL): con una URL http de pruebas el navegador descartaría la cookie.
+const COOKIE_BASE = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production' && String(process.env.FRONTEND_URL || '').startsWith('https'),
+};
+const SCOPES = ['openid', 'profile', 'email', 'User.Read'];
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const REDIRECT_URI = process.env.AZURE_REDIRECT_URI || 'http://localhost:3001/api/auth/azure/callback';
+
+// Cliente MSAL perezoso: sin las variables AZURE_* el servidor arranca igual (el login por
+// contrasena y HubSpot siguen funcionando) y solo el SSO de Microsoft responde con error.
+let msalClient = null;
+function getMsalClient() {
+  if (!process.env.AZURE_CLIENT_ID || !process.env.AZURE_CLIENT_SECRET || !process.env.AZURE_TENANT_ID) return null;
+  if (!msalClient) {
+    msalClient = new msal.ConfidentialClientApplication({
+      auth: {
+        clientId: process.env.AZURE_CLIENT_ID,
+        authority: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}`,
+        clientSecret: process.env.AZURE_CLIENT_SECRET,
+      },
+    });
+  }
+  return msalClient;
+}
+
+function setSessionCookies(res, usuario) {
+  const accessToken = createAccessToken(usuario.email, usuario.roles);
+  const refreshToken = createRefreshToken(usuario.email);
+  res.cookie(ACCESS_COOKIE_NAME, accessToken, { ...COOKIE_BASE, maxAge: ACCESS_TOKEN_EXPIRE_HOURS * 3600 * 1000 });
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, { ...COOKIE_BASE, maxAge: REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600 * 1000 });
+}
+
+// GET /auth/azure/login -- inicia un login normal.
+const iniciarLogin = asyncHandler(async (req, res) => {
+  const client = getMsalClient();
+  if (!client) return res.redirect(`${FRONTEND_URL}/login?error=OAuthError`);
+  const url = await client.getAuthCodeUrl({ scopes: SCOPES, redirectUri: REDIRECT_URI });
+  res.redirect(url);
+});
+
+// GET /auth/azure/link -- requireAuth: marca "el próximo callback es para
+// VINCULAR la cuenta de req.usuario", vía una cookie de corta vida (5 min).
+const iniciarVinculacion = asyncHandler(async (req, res) => {
+  const client = getMsalClient();
+  if (!client) return res.redirect(`${FRONTEND_URL}/perfil?ms_error=${encodeURIComponent('El SSO de Microsoft no está configurado.')}`);
+  res.cookie(MS_LINK_INTENT_COOKIE_NAME, String(req.usuario.id), { ...COOKIE_BASE, maxAge: 5 * 60 * 1000 });
+  const url = await client.getAuthCodeUrl({ scopes: SCOPES, redirectUri: REDIRECT_URI });
+  res.redirect(url);
+});
+
+// GET /auth/azure/callback -- Microsoft redirige acá con ?code=...
+const callback = asyncHandler(async (req, res) => {
+  const { code, error } = req.query;
+  const client = getMsalClient();
+  if (error || !code || !client) {
+    return res.redirect(`${FRONTEND_URL}/login?error=OAuthError`);
+  }
+
+  let tokenResponse;
+  try {
+    tokenResponse = await client.acquireTokenByCode({ code, scopes: SCOPES, redirectUri: REDIRECT_URI });
+  } catch {
+    return res.redirect(`${FRONTEND_URL}/login?error=OAuthError`);
+  }
+
+  const claims = tokenResponse.account?.idTokenClaims ?? {};
+  const microsoftId = tokenResponse.uniqueId || claims.oid || claims.sub;
+  const microsoftEmail = (tokenResponse.account?.username || claims.email || claims.preferred_username || '').toLowerCase() || null;
+  if (!microsoftId) return res.redirect(`${FRONTEND_URL}/login?error=OAuthError`);
+
+  const linkIntent = req.cookies?.[MS_LINK_INTENT_COOKIE_NAME];
+  if (linkIntent) {
+    res.clearCookie(MS_LINK_INTENT_COOKIE_NAME);
+    try {
+      await usuarioService.vincularMicrosoft(linkIntent, microsoftId, microsoftEmail);
+      return res.redirect(`${FRONTEND_URL}/perfil?ms_linked=${encodeURIComponent(microsoftEmail ?? 'true')}`);
+    } catch (err) {
+      return res.redirect(`${FRONTEND_URL}/perfil?ms_error=${encodeURIComponent(err.message)}`);
+    }
+  }
+
+  // Login normal: el microsoftId tiene que estar ya vinculado a un usuario.
+  const usuario = await usuarioService.buscarPorMicrosoftId(microsoftId);
+  if (!usuario) {
+    const usuarioPorEmail = microsoftEmail ? await Usuario.findOne({ where: { email: microsoftEmail } }) : null;
+    const razon = usuarioPorEmail ? 'OAuthNotLinked' : 'OAuthAccountNotFound';
+    return res.redirect(`${FRONTEND_URL}/login?error=${razon}`);
+  }
+  if (!usuario.activo) {
+    return res.redirect(`${FRONTEND_URL}/login?error=OAuthAccountInactive`);
+  }
+
+  await usuarioService.registrarConexion(usuario);
+  setSessionCookies(res, usuario);
+  res.redirect(usuario.debe_cambiar_password ? `${FRONTEND_URL}/cambiar-password` : FRONTEND_URL);
+});
+
+// POST /auth/azure/unlink -- requireAuth.
+const desvincular = asyncHandler(async (req, res) => {
+  const { ok } = require('../../utils/ApiResponse');
+  await usuarioService.desvincularMicrosoft(req.usuario.id);
+  ok(res, { detail: 'Cuenta de Microsoft desvinculada' });
+});
+
+module.exports = { iniciarLogin, iniciarVinculacion, callback, desvincular };

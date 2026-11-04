@@ -1,0 +1,28 @@
+{
+  "name": "centro-aplicaciones-comerciales-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "npm run db:migrate && node src/server.js",
+    "db:migrate": "sequelize-cli db:migrate",
+    "crear-admin": "node scripts/crearAdmin.js"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^2.16.2",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1",
+    "sequelize": "^6.37.5",
+    "sequelize-cli": "^6.6.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
