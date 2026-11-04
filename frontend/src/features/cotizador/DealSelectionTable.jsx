@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { CircleAlert, Layers, ArrowUpDown, RefreshCw, Search, Flag } from 'lucide-react';
 import { Pagination } from '../../components/ui/Pagination.jsx';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Field, TextInput, Select } from '../../components/ui/Field.jsx';
 import { MultiSelect } from '../../components/ui/MultiSelect.jsx';
+import { useEstadoRetorno } from '../../hooks/useEstadoRetorno.js';
 import lista from '../../components/ui/Lista.module.css';
 import styles from './DealSelectionTable.module.css';
 const PAGE_SIZE = 20;
@@ -38,11 +39,11 @@ function stageVariant(stage) {
 }
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DealSelectionTable({ deals, loading, error, onSelect, onRefresh }) {
-  const [search, setSearch] = useState('');
-  const [stageFilter, setStageFilter] = useState([]);
-  const [projectFilter, setProjectFilter] = useState([]);
-  const [sort, setSort] = useState('actividad');
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useEstadoRetorno('cotizador:busqueda', '');
+  const [stageFilter, setStageFilter] = useEstadoRetorno('cotizador:etapa', []);
+  const [projectFilter, setProjectFilter] = useEstadoRetorno('cotizador:proyecto', []);
+  const [sort, setSort] = useEstadoRetorno('cotizador:orden', 'actividad');
+  const [page, setPage] = useEstadoRetorno('cotizador:pagina', 1);
   // Unique stage and project options extracted from deal list
   const stages = useMemo(() => {
     const s = new Set(deals.map((d) => d.dealstage).filter(Boolean));
@@ -71,9 +72,14 @@ export default function DealSelectionTable({ deals, loading, error, onSelect, on
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
   }, [deals, search, stageFilter, projectFilter, sort]);
+  // Al cambiar un filtro se vuelve a la primera pagina (no al montar: al volver de un detalle se conserva la pagina).
+  const claveFiltros = JSON.stringify([search, stageFilter, projectFilter, sort]);
+  const claveAnterior = useRef(claveFiltros);
   useEffect(() => {
+    if (claveAnterior.current === claveFiltros) return;
+    claveAnterior.current = claveFiltros;
     setPage(1);
-  }, [search, stageFilter, projectFilter, sort]);
+  }, [claveFiltros]);
   const paginated = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);

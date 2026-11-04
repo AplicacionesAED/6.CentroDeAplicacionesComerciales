@@ -67,7 +67,7 @@ test('filtrarArbol gestionando muestra todo y filtra por nombre y tipo', () => {
   const todo = filtrarArbol(arbol(), { gestionando: true });
   assert.equal(contarArchivos(todo), 3);
   assert.deepEqual(filtrarArbol(arbol(), { gestionando: true, busqueda: 'plano' }).map((n) => n.id), ['a', 'b']); // la carpeta vacia B siempre se muestra
-  assert.deepEqual(filtrarArbol(arbol(), { gestionando: true, tipoArchivo: 'word' }).map((n) => n.id), ['b', 'f']);
+  assert.deepEqual(filtrarArbol(arbol(), { gestionando: true, tiposArchivo: ['word'] }).map((n) => n.id), ['b', 'f']);
 });
 
 test('etiquetaTipo', () => {

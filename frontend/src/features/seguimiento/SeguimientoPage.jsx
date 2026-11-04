@@ -1,6 +1,6 @@
 // Seguimiento de cotizaciones: por defecto agrupadas por negocio (cada fila se expande a sus cotizaciones); con el
 // filtro de tipo se pasa a una vista plana de cotizaciones individuales.
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, Eye, FileText, Layers, RefreshCw, Search, Trash2, User } from 'lucide-react';
 import { Button } from '../../components/ui/Button.jsx';
@@ -11,6 +11,7 @@ import { SortHeader } from '../../components/ui/SortHeader.jsx';
 import { Field, TextInput } from '../../components/ui/Field.jsx';
 import { MultiSelect } from '../../components/ui/MultiSelect.jsx';
 import { useSortableTable } from '../../hooks/useSortableTable.js';
+import { useEstadoRetorno } from '../../hooks/useEstadoRetorno.js';
 import { useAppConfig } from '../../context/AppConfigContext.jsx';
 import { PROJECTS } from '../../utils/cotizador.js';
 import { fetchDealsWithQuotes, fetchQuotesByDeal, acceptQuoteAPI, fetchAllQuotes, deleteQuoteAPI, urlPdfCotizacion } from '../../api/cotizador.js';
@@ -231,12 +232,12 @@ export default function SeguimientoPage() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
 
-  const [busqueda, setBusqueda] = useState('');
-  const [tipo, setTipo] = useState([]);
-  const [estado, setEstado] = useState([]);
-  const [proyecto, setProyecto] = useState([]);
-  const [vendedor, setVendedor] = useState([]);
-  const [pagina, setPagina] = useState(1);
+  const [busqueda, setBusqueda] = useEstadoRetorno('seguimiento:busqueda', '');
+  const [tipo, setTipo] = useEstadoRetorno('seguimiento:tipo', []);
+  const [estado, setEstado] = useEstadoRetorno('seguimiento:estado', []);
+  const [proyecto, setProyecto] = useEstadoRetorno('seguimiento:proyecto', []);
+  const [vendedor, setVendedor] = useEstadoRetorno('seguimiento:vendedor', []);
+  const [pagina, setPagina] = useEstadoRetorno('seguimiento:pagina', 1);
 
   const [aAceptar, setAAceptar] = useState(null);
   const [aceptando, setAceptando] = useState(false);
@@ -378,9 +379,14 @@ export default function SeguimientoPage() {
     [todas, tipo, vendedor, proyecto, busqueda, estado]
   );
 
+  // Al cambiar un filtro se vuelve a la primera pagina (no al montar: al volver de un detalle se conserva la pagina).
+  const claveFiltros = JSON.stringify([busqueda, tipo, estado, vendedor, proyecto, sort]);
+  const claveAnterior = useRef(claveFiltros);
   useEffect(() => {
+    if (claveAnterior.current === claveFiltros) return;
+    claveAnterior.current = claveFiltros;
     setPagina(1);
-  }, [busqueda, tipo, estado, vendedor, proyecto, sort]);
+  }, [claveFiltros]);
 
   const vendedores = useMemo(() => [...new Set(todas.map((q) => q.user_email).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')), [todas]);
 

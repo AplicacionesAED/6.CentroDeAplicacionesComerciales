@@ -155,7 +155,7 @@ export function contarArchivos(nodos) {
 // Arbol visible. Fuera de "Gestionar" solo se ven los archivos con enlace (lo mismo que ve un vendedor); gestionando
 // se ven todos, incluidos los recien creados, para poder completar su enlace. Una carpeta realmente vacia siempre se
 // muestra; una con contenido solo si algun hijo sobrevive al filtro.
-export function filtrarArbol(nodos, { busqueda = '', tipoArchivo = '', gestionando = false, urls = {} }) {
+export function filtrarArbol(nodos, { busqueda = '', tiposArchivo = [], gestionando = false, urls = {} }) {
   const t = busqueda.toLowerCase();
   const filtrar = (lista) =>
     lista
@@ -168,7 +168,7 @@ export function filtrarArbol(nodos, { busqueda = '', tipoArchivo = '', gestionan
         }
         if (!gestionando && !urls[n.id]?.trim()) return null;
         const coincideNombre = !t || n.name.toLowerCase().includes(t);
-        const coincideTipo = !tipoArchivo || n.fileType === tipoArchivo;
+        const coincideTipo = tiposArchivo.length === 0 || tiposArchivo.includes(n.fileType);
         return coincideNombre && coincideTipo ? n : null;
       })
       .filter(Boolean);

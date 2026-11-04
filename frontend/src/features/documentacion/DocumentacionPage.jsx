@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Modal } from '../../components/ui/Modal.jsx';
 import { Tabs } from '../../components/ui/Tabs.jsx';
 import { Field, TextInput, Select } from '../../components/ui/Field.jsx';
+import { MultiSelect } from '../../components/ui/MultiSelect.jsx';
 import { useAppConfig } from '../../context/AppConfigContext.jsx';
 import { useCopiarEnlace } from '../../hooks/useCopiarEnlace.js';
 import { fetchDocumentos, guardarCarpetas, guardarUrls } from '../../api/documentacion.js';
@@ -26,7 +27,7 @@ export default function DocumentacionPage() {
   const [proyecto, setProyecto] = useState('oliv');
   const [busqueda, setBusqueda] = useState('');
   const [carpetaFiltro, setCarpetaFiltro] = useState('');
-  const [tipoFiltro, setTipoFiltro] = useState('');
+  const [tipoFiltro, setTipoFiltro] = useState([]);
   const [arboles, setArboles] = useState({});
   const [urls, setUrls] = useState({});
   const [cargando, setCargando] = useState(true);
@@ -145,14 +146,14 @@ export default function DocumentacionPage() {
 
   const visible = useMemo(() => {
     const origen = carpetaFiltro ? buscarNodo(arbolActual, carpetaFiltro)?.children || [] : arbolActual;
-    return filtrarArbol(origen, { busqueda, tipoArchivo: tipoFiltro, gestionando: puedeGestionar, urls: urlsActuales });
+    return filtrarArbol(origen, { busqueda, tiposArchivo: tipoFiltro, gestionando: puedeGestionar, urls: urlsActuales });
   }, [arbolActual, urlsActuales, busqueda, carpetaFiltro, tipoFiltro, puedeGestionar]);
 
-  const hayFiltros = Boolean(busqueda || carpetaFiltro || tipoFiltro);
+  const hayFiltros = Boolean(busqueda || carpetaFiltro || tipoFiltro.length);
   const limpiarFiltros = () => {
     setBusqueda('');
     setCarpetaFiltro('');
-    setTipoFiltro('');
+    setTipoFiltro([]);
   };
   const elegirProyecto = (p) => {
     setProyecto(p);
@@ -246,12 +247,7 @@ export default function DocumentacionPage() {
               )}
             </Field>
             <Field label={<span className={lista.labelConIcono}><File size={13} />Tipo</span>}>
-              {(p) => (
-                <Select value={tipoFiltro} onChange={(e) => setTipoFiltro(e.target.value)} {...p}>
-                  <option value="">Todos los tipos</option>
-                  {TIPOS_ARCHIVO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </Select>
-              )}
+              {(p) => <MultiSelect {...p} options={TIPOS_ARCHIVO} value={tipoFiltro} onChange={setTipoFiltro} placeholder="Todos los tipos" />}
             </Field>
             {hayFiltros && (
               <button type="button" className={lista.limpiar} onClick={limpiarFiltros}>

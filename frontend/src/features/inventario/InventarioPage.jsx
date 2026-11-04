@@ -1,5 +1,5 @@
 // Inventario de unidades de los 4 proyectos (solo administradores). Cada fila abre el registro en HubSpot.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Layers, RefreshCw, Search, Tag } from 'lucide-react';
 import { Button } from '../../components/ui/Button.jsx';
 import { Badge } from '../../components/ui/Badge.jsx';
@@ -8,6 +8,7 @@ import { SortHeader } from '../../components/ui/SortHeader.jsx';
 import { Field, TextInput } from '../../components/ui/Field.jsx';
 import { MultiSelect } from '../../components/ui/MultiSelect.jsx';
 import { useSortableTable } from '../../hooks/useSortableTable.js';
+import { useEstadoRetorno } from '../../hooks/useEstadoRetorno.js';
 import { PROJECTS, HUBSPOT_PORTAL_ID, OBJETO_UNIDADES, unitStatusVariant } from '../../utils/cotizador.js';
 import { fetchInventory } from '../../api/cotizador.js';
 import { moneda } from '../seguimiento/cotizaciones.js';
@@ -36,10 +37,10 @@ export default function InventarioPage() {
   const [unidades, setUnidades] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
-  const [busqueda, setBusqueda] = useState('');
-  const [proyecto, setProyecto] = useState([]);
-  const [estado, setEstado] = useState([]);
-  const [pagina, setPagina] = useState(1);
+  const [busqueda, setBusqueda] = useEstadoRetorno('inventario:busqueda', '');
+  const [proyecto, setProyecto] = useEstadoRetorno('inventario:proyecto', []);
+  const [estado, setEstado] = useEstadoRetorno('inventario:estado', []);
+  const [pagina, setPagina] = useEstadoRetorno('inventario:pagina', 1);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -71,9 +72,14 @@ export default function InventarioPage() {
 
   const { sortedRows, sort, toggleSort } = useSortableTable(filtradas, VALORES);
 
+  // Al cambiar un filtro se vuelve a la primera pagina (no al montar: al volver de un detalle se conserva la pagina).
+  const claveFiltros = JSON.stringify([busqueda, proyecto, estado, sort]);
+  const claveAnterior = useRef(claveFiltros);
   useEffect(() => {
+    if (claveAnterior.current === claveFiltros) return;
+    claveAnterior.current = claveFiltros;
     setPagina(1);
-  }, [busqueda, proyecto, estado, sort]);
+  }, [claveFiltros]);
 
   const hayFiltros = Boolean(busqueda || proyecto.length || estado.length);
   const limpiar = () => {

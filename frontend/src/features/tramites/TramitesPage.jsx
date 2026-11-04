@@ -1,12 +1,13 @@
 // Negocios en etapa 6 o posterior de su pipeline (en tramite). Es el unico lugar donde se generan los anexos
 // de una cotizacion aceptada.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Layers, RefreshCw, Search } from 'lucide-react';
 import { Button } from '../../components/ui/Button.jsx';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Field, TextInput } from '../../components/ui/Field.jsx';
 import { MultiSelect } from '../../components/ui/MultiSelect.jsx';
 import { Pagination } from '../../components/ui/Pagination.jsx';
+import { useEstadoRetorno } from '../../hooks/useEstadoRetorno.js';
 import { PROJECTS } from '../../utils/cotizador.js';
 import { fetchTramites } from '../../api/cotizador.js';
 import { moneda } from '../seguimiento/cotizaciones.js';
@@ -33,9 +34,9 @@ export default function TramitesPage() {
   const [tramites, setTramites] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
-  const [busqueda, setBusqueda] = useState('');
-  const [proyecto, setProyecto] = useState([]);
-  const [pagina, setPagina] = useState(1);
+  const [busqueda, setBusqueda] = useEstadoRetorno('tramites:busqueda', '');
+  const [proyecto, setProyecto] = useEstadoRetorno('tramites:proyecto', []);
+  const [pagina, setPagina] = useEstadoRetorno('tramites:pagina', 1);
 
   const cargar = useCallback(async (refrescar = false) => {
     setCargando(true);
@@ -60,9 +61,14 @@ export default function TramitesPage() {
       .filter((t) => !q || `${t.deal_name ?? ''} ${t.unit_code ?? ''}`.toLowerCase().includes(q));
   }, [tramites, proyecto, busqueda]);
 
+  // Al cambiar un filtro se vuelve a la primera pagina (no al montar: al volver de un detalle se conserva la pagina).
+  const claveFiltros = JSON.stringify([busqueda, proyecto]);
+  const claveAnterior = useRef(claveFiltros);
   useEffect(() => {
+    if (claveAnterior.current === claveFiltros) return;
+    claveAnterior.current = claveFiltros;
     setPagina(1);
-  }, [busqueda, proyecto]);
+  }, [claveFiltros]);
 
   const hayFiltros = Boolean(busqueda || proyecto.length);
   const limpiar = () => {
