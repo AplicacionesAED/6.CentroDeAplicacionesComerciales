@@ -62,9 +62,12 @@ async function reflejarEnHubspot(usuario, cotizacion, archivo, { skipDealStage }
   }
 }
 
-// <raiz>/Cotizaciones/<proyecto>/<nombre>; devuelve el id del archivo en Drive.
-async function subirPdfADrive(buffer, nombre, proyecto) {
-  const carpeta = await googleDrive.resolverCarpetaCotizaciones(proyecto);
+// Dia de una fecha en hora de Colombia, como AAAA-MM-DD (nombre de la carpeta de fecha en Drive).
+const diaColombia = (fecha = new Date()) => new Date(fecha).toLocaleDateString('sv-SE', { timeZone: 'America/Bogota' });
+
+// <raiz>/Cotizaciones/<proyecto>/<id> - <negocio>/<AAAA-MM-DD>/<nombre>; devuelve el id del archivo en Drive.
+async function subirPdfADrive(buffer, nombre, { proyecto, dealId, dealName, fecha = diaColombia() }) {
+  const carpeta = await googleDrive.resolverCarpetaCotizacion({ proyecto, dealId, dealName, fecha });
   const subido = await googleDrive.subirArchivo(buffer, nombre, 'application/pdf', carpeta);
   return subido.id;
 }
@@ -75,7 +78,7 @@ async function crear(usuario, data, archivo) {
   if (archivo) {
     pdfFilename = `cotizacion_${data.dealId}_${Date.now()}.pdf`;
     // Si Drive falla no se guarda la cotizacion: sin su PDF quedaria a medias.
-    pdfDriveId = await subirPdfADrive(archivo.buffer, pdfFilename, data.project);
+    pdfDriveId = await subirPdfADrive(archivo.buffer, pdfFilename, { proyecto: data.project, dealId: data.dealId, dealName: data.dealName });
   }
 
   const cotizacion = await Cotizacion.create({
@@ -240,6 +243,7 @@ async function ultimaPorNegocio() {
 
 module.exports = {
   QUOTES_DIR,
+  diaColombia,
   leerPdf,
   filtroDueno,
   cargarVisible,

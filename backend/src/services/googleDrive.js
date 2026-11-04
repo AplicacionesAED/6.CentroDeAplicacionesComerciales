@@ -3,7 +3,7 @@
 //
 // Jerarquia (raiz = carpeta "6. CENTRO DE APLICACIONES COMERCIALES", exclusiva de este proyecto, dentro de la
 // misma Unidad Compartida que las demas apps):
-//   <raiz>/Cotizaciones/<proyecto>/cotizacion_<negocio>_<marca>.pdf
+//   <raiz>/Cotizaciones/<proyecto>/<id del negocio> - <nombre del negocio>/<AAAA-MM-DD>/cotizacion_<negocio>_<marca>.pdf
 //
 // Credencial (mutuamente sustituibles, se prueba primero la primera):
 // - GOOGLE_DRIVE_CREDENTIALS_JSON: contenido COMPLETO del .json como variable de entorno (Docker/Coolify).
@@ -58,10 +58,38 @@ async function buscarOCrearCarpeta(nombre, carpetaPadreId) {
   return creada.id;
 }
 
-// <raiz>/Cotizaciones/<proyecto>
-async function resolverCarpetaCotizaciones(proyecto) {
+// Nombre de carpeta valido: sin separadores ni comillas raras, recortado.
+const limpiarNombre = (texto) => String(texto ?? '').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+
+// <raiz>/Cotizaciones/<proyecto>/<id del negocio> - <nombre>/<AAAA-MM-DD>
+// La carpeta del negocio se busca por el prefijo "<id> - " (el id no cambia aunque renombren el negocio en HubSpot) y
+// se reutiliza; solo se crea si no existe. `fecha` ya viene como AAAA-MM-DD (dia de la cotizacion, hora de Colombia).
+async function resolverCarpetaCotizacion({ proyecto, dealId, dealName, fecha }) {
+  const drive = getDriveClient();
   const cotizaciones = await buscarOCrearCarpeta('Cotizaciones', process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID);
-  return buscarOCrearCarpeta(String(proyecto ?? '').trim() || 'Sin proyecto', cotizaciones);
+  const carpetaProyecto = await buscarOCrearCarpeta(limpiarNombre(proyecto) || 'Sin proyecto', cotizaciones);
+
+  const prefijo = `${dealId} - `;
+  const { data } = await drive.files.list({
+    q: `name contains '${escaparParaQuery(prefijo)}' and mimeType = '${FOLDER_MIME}' and '${carpetaProyecto}' in parents and trashed = false`,
+    fields: 'files(id, name)',
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    spaces: 'drive',
+  });
+  const existente = (data.files ?? []).find((f) => f.name.startsWith(prefijo));
+  const carpetaNegocio = existente ? existente.id : await buscarOCrearCarpeta(`${prefijo}${limpiarNombre(dealName) || 'Sin nombre'}`, carpetaProyecto);
+  return buscarOCrearCarpeta(fecha, carpetaNegocio);
+}
+
+// Mover en Drive solo cambia el padre: el id del archivo no cambia. Devuelve false si ya estaba en esa carpeta.
+async function moverArchivo(fileId, carpetaDestinoId) {
+  const drive = getDriveClient();
+  const { data } = await drive.files.get({ fileId, fields: 'parents', supportsAllDrives: true });
+  const padres = data.parents ?? [];
+  if (padres.includes(carpetaDestinoId)) return false;
+  await drive.files.update({ fileId, addParents: carpetaDestinoId, removeParents: padres.join(','), fields: 'id', supportsAllDrives: true });
+  return true;
 }
 
 async function subirArchivo(buffer, nombre, mimeType, carpetaId) {
@@ -105,4 +133,4 @@ async function descargarBuffer(fileId) {
   return Buffer.concat(partes);
 }
 
-module.exports = { getDriveClient, buscarOCrearCarpeta, resolverCarpetaCotizaciones, subirArchivo, marcarArchivoEliminado, obtenerArchivoStream, descargarBuffer };
+module.exports = { getDriveClient, buscarOCrearCarpeta, resolverCarpetaCotizacion, moverArchivo, subirArchivo, marcarArchivoEliminado, obtenerArchivoStream, descargarBuffer };
