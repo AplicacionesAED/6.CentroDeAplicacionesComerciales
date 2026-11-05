@@ -103,10 +103,10 @@
 }
 
 /* Paso final: acciones y resultados. */
-.acciones {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+.nota {
+  margin: 0;
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
 }
 
 .aviso {

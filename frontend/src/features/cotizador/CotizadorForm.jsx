@@ -19,6 +19,7 @@ import PlanEstandarCompacto from './PlanEstandarCompacto.jsx';
 import { useCurrency } from '../../context/CurrencyContext.jsx';
 import ModeledPlanTable from './ModeledPlanTable.jsx';
 import DealInfo from './DealInfo.jsx';
+import RevisionResumen from './RevisionResumen.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { CircleAlert, CircleCheck, Eye, TriangleAlert } from 'lucide-react';
 import styles from './CotizadorForm.module.css';
@@ -800,6 +801,50 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
     setPaso(i);
     setTimeout(() => document.getElementById('cotizador-stepper')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
+  // Paso 3: resumen y validaciones previas. Las criticas (error) bloquean el boton de generar; las demas son avisos.
+  const codigoUnidad = selectedUnit ? selectedUnit.codigo_unidad || selectedUnit.id_unidad || selectedUnit.id : '';
+  const accesoriosTexto = [selectedParking?.name, selectedDeposito?.name, selectedCuartoUtil?.name].filter(Boolean).join(' · ');
+  const saldoFinalRevision = ultimaEntrada ? `${fmtCop(currentCalc.saldo)} · ${ultimaEntrada.fecha_estimada}` : fmtCop(currentCalc.saldo);
+  const cuotaInicialRevision = quoteType === 'estandar' ? currentCalc.precio - currentCalc.saldo : cuotaInicialModelada;
+  const resumenRevision = [
+    ['Cliente', deal?.dealname || '---'],
+    ['Asesor', deal?.hubspot_owner_id || '---'],
+    [
+      'Inmueble',
+      selectedUnit
+        ? [codigoUnidad, towerName, selectedUnit.piso > 0 && `P${selectedUnit.piso}`, selectedUnit.area_construida > 0 && `${selectedUnit.area_construida} m²`].filter(Boolean).join(' · ')
+        : '---',
+    ],
+    ['Accesorios', accesoriosTexto || (sinAccesorios ? 'Sin accesorios (confirmado)' : 'Sin accesorios')],
+    ['Precio total', fmtCop(precioConDescuento)],
+    ['Tipo de cotización', quoteType === 'estandar' ? 'Estándar' : 'Modelador'],
+    ['Separación', fmtCop(currentSeparacion)],
+    ['Cuota inicial', `${fmtCop(cuotaInicialRevision)} en ${currentCuotas} cuotas`],
+    ['Saldo final', saldoFinalRevision],
+  ];
+  const validacionesRevision = [
+    selectedUnit ? { tipo: 'ok', texto: `Inmueble seleccionado: ${codigoUnidad}` } : { tipo: 'error', texto: 'Falta seleccionar un inmueble' },
+    tieneAccesorio
+      ? { tipo: 'ok', texto: `Accesorios: ${accesoriosTexto}` }
+      : accesoriosPendientes
+        ? { tipo: 'error', texto: 'Accesorios: falta decidir (elige uno o confirma «Sin accesorios»)' }
+        : sinAccesorios
+          ? { tipo: 'info', texto: 'Sin accesorios: confirmado por el asesor' }
+          : { tipo: 'info', texto: 'Este inmueble no tiene accesorios disponibles' },
+    isModeledInvalid ? { tipo: 'error', texto: modeledPlanData.warning } : { tipo: 'ok', texto: 'El plan cuadra con la cuota inicial' },
+    ...(bonoMax > 0
+      ? [
+          bonoAplicado <= bonoMax
+            ? { tipo: 'ok', texto: `Bono dentro del máximo (${fmtCop(bonoAplicado)} de ${fmtCop(bonoMax)})` }
+            : { tipo: 'error', texto: `El bono (${fmtCop(bonoAplicado)}) supera el máximo de ${fmtCop(bonoMax)}` },
+        ]
+      : []),
+    deal?.destino_del_inmueble
+      ? { tipo: 'ok', texto: `Destino del cliente: ${deal.destino_del_inmueble}` }
+      : { tipo: 'aviso', texto: 'Destino del cliente sin definir (se completa en HubSpot)' },
+    deal?.alcobas ? { tipo: 'ok', texto: `Alcobas del negocio: ${deal.alcobas}` } : { tipo: 'aviso', texto: 'Alcobas del negocio sin definir (se completan en HubSpot)' },
+  ];
+  const puedeGenerar = canSubmit && !accesoriosPendientes && !validacionesRevision.some((v) => v.tipo === 'error');
   return (
     <div className={styles.form}>
       <ol id="cotizador-stepper" aria-label="Pasos de la cotización" className={styles.stepper}>
@@ -823,11 +868,11 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
         })}
       </ol>
 
+      <DealInfo deal={deal} loading={dealLoading} descuentoPct={descuentoPct > 0 ? descuentoPct : undefined} descuentoModo={descuentoModo} />
+
       <div className={styles.form}>
         {/* ── PASO 1 — Inmueble y accesorios ── */}
         <div hidden={paso !== 0} className={styles.panel}>
-          <DealInfo deal={deal} loading={dealLoading} descuentoPct={descuentoPct > 0 ? descuentoPct : undefined} descuentoModo={descuentoModo} />
-
           <CotizacionesPrevias
             dealId={dealId}
             onRecotizar={handleRecotizar}
@@ -934,8 +979,8 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
 
             {/* ── PASO 3 — Revisión y generación ── */}
             <div hidden={paso !== 2} className={styles.panel}>
-              <div className={styles.acciones}>
-                <Button onClick={() => handleSubmit(false)} disabled={!canSubmit || submitStatus === 'loading'}>
+              <RevisionResumen resumen={resumenRevision} validaciones={validacionesRevision}>
+                <Button onClick={() => handleSubmit(false)} disabled={!puedeGenerar || submitStatus === 'loading'}>
                   {dealLoading ? (
                     <>
                       <span className={styles.spinner} aria-hidden="true" />
@@ -947,28 +992,29 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
                       {needsAssociation ? 'Asociando inmueble y generando PDF…' : 'Generando PDF…'}
                     </>
                   ) : (
-                    'Generar Cotización PDF'
+                    'Generar cotización PDF'
                   )}
                 </Button>
+                <p className={styles.nota}>
+                  {needsAssociation
+                    ? `Descarga el PDF y asocia ${codigoUnidad} al negocio. Quedará en «Ya cotizados».`
+                    : 'Descarga el PDF. Quedará en «Ya cotizados».'}
+                </p>
 
                 {role === 'admin' && quoteType === 'modelador' && (
-                  <Button variant="secondary" onClick={() => handleSubmit(true)} disabled={!canSubmit || submitStatus === 'loading'}>
-                    {submitStatus === 'loading' ? (
-                      <>
-                        <span className={styles.spinner} aria-hidden="true" />
-                        Generando PDF…
-                      </>
-                    ) : (
-                      'Generar y guardar internamente'
-                    )}
-                  </Button>
-                )}
-
-                {needsAssociation && selectedUnit && submitStatus === 'idle' && (
-                  <div className={`${styles.aviso} ${styles.avisoAdvertencia}`} role="status">
-                    <TriangleAlert size={16} strokeWidth={1.75} aria-hidden="true" />
-                    <span>Esta unidad se asociará al negocio automáticamente al generar el PDF</span>
-                  </div>
+                  <>
+                    <Button variant="secondary" onClick={() => handleSubmit(true)} disabled={!puedeGenerar || submitStatus === 'loading'}>
+                      {submitStatus === 'loading' ? (
+                        <>
+                          <span className={styles.spinner} aria-hidden="true" />
+                          Generando PDF…
+                        </>
+                      ) : (
+                        'Generar y guardar internamente'
+                      )}
+                    </Button>
+                    <p className={styles.nota}>Registra la cotización en el historial del negocio sin entregarla al cliente.</p>
+                  </>
                 )}
 
                 {submitStatus === 'success' && (
@@ -1000,7 +1046,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
                     <span>Error: {errorMessage || 'No se pudo generar la cotización.'}</span>
                   </div>
                 )}
-              </div>
+              </RevisionResumen>
             </div>
           </>
         )}
@@ -1020,6 +1066,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
               ))}
             </dl>
           )}
+          {paso === 2 && <span className={styles.pieMensaje}>Revisa el resumen y elige cómo generar la cotización</span>}
           {paso === 0 && <span className={`${styles.pieMensaje} ${accesoriosPendientes ? styles.pieMensajePendiente : ''}`}>{mensajePaso1}</span>}
           {!esUltimoPaso && (
             <div className={styles.pieAcciones}>
