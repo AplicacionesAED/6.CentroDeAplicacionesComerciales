@@ -143,24 +143,22 @@ export default function EnhancedUnitSelector({ associatedUnits, availableUnits, 
   };
   return (
     <section className={styles.root}>
-      <h3 className={styles.titulo}>Seleccionar unidad</h3>
-
       {/* Las unidades que ya se cotizaron al negocio salen arriba en "Ya cotizados para este cliente" (Recotizar). */}
-      <div className={styles.acciones}>
+      <div className={styles.cabecera}>
+        <h3 className={styles.titulo}>Seleccionar unidad</h3>
         {onRefreshAvailable && (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => {
               onRefreshAvailable();
               refreshProject();
             }}
             disabled={availableLoading || projectLoading}
-            title="Actualizar desde HubSpot"
-            aria-label="Actualizar desde HubSpot"
-            className={styles.refrescar}
+            title="Volver a cargar los inmuebles desde HubSpot"
           >
-            <RefreshCw className={availableLoading ? styles.girando : ''} size={16} strokeWidth={1.75} aria-hidden="true" />
-          </button>
+            <RefreshCw className={availableLoading || projectLoading ? styles.girando : ''} size={14} strokeWidth={1.75} aria-hidden="true" />
+            Actualizar inmuebles
+          </Button>
         )}
       </div>
 
