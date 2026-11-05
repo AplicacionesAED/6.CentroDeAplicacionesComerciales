@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { ArrowRight, Building2, Check, ChevronLeft, RefreshCw, Search, X } from 'lucide-react';
+import { ArrowRight, Building2, ChevronLeft, RefreshCw, Search, X } from 'lucide-react';
 import { useProjectUnits } from '../../hooks/useProjectUnits.js';
 import { fetchTowers } from '../../api/cotizador.js';
 import TowerGrid from './TowerGrid.jsx';
@@ -95,7 +95,6 @@ function SelectedAvailableCard({ unit, towerName, onChangeUnit }) {
 }
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function EnhancedUnitSelector({ associatedUnits, availableUnits, availableLoading, selectedId, onChange, onRefreshAvailable, project }) {
-  const [activeTab, setActiveTab] = useState('associated');
   const [towers, setTowers] = useState([]);
   const [towersLoading, setTowersLoading] = useState(false);
   const [selectedTowerData, setSelectedTowerData] = useState(null);
@@ -142,42 +141,17 @@ export default function EnhancedUnitSelector({ associatedUnits, availableUnits, 
     setVistaFiltro('');
     setSearchOpen(true);
   };
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    if (tab === 'available') {
-      setSelectedTowerData(null);
-      setSearch('');
-      setVistaFiltro('');
-      setSearchOpen(true);
-    }
-  };
   return (
     <section className={styles.root}>
       <h3 className={styles.titulo}>Seleccionar unidad</h3>
 
-      {/* Tabs */}
-      <div className={styles.tabs} role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'associated'}
-          onClick={() => handleTabChange('associated')}
-          className={`${styles.tab} ${activeTab === 'associated' ? styles.tabActiva : ''}`}
-        >
-          Unidades del negocio
-          <span className={styles.conteo}>({associatedUnits.length})</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'available'}
-          onClick={() => handleTabChange('available')}
-          className={`${styles.tab} ${activeTab === 'available' ? styles.tabActiva : ''}`}
-        >
+      {/* Las unidades que ya se cotizaron al negocio salen arriba en "Ya cotizados para este cliente" (Recotizar). */}
+      <div className={styles.tabs}>
+        <span className={styles.tab}>
           Inmuebles disponibles {project || ''}
           <span className={styles.conteo}>{availableLoading ? '…' : `(${filteredAvailable.length})`}</span>
-        </button>
-        {activeTab === 'available' && onRefreshAvailable && (
+        </span>
+        {onRefreshAvailable && (
           <button
             type="button"
             onClick={() => {
@@ -194,56 +168,8 @@ export default function EnhancedUnitSelector({ associatedUnits, availableUnits, 
         )}
       </div>
 
-      {/* ── Associated tab ── */}
-      {activeTab === 'associated' &&
-        (associatedUnits.length === 0 ? (
-          <p className={styles.vacio}>
-            Este negocio no tiene inmuebles ni parqueaderos asociados.
-            <br />
-            Para asociarlos, ingresa al negocio directamente en HubSpot y vincula las unidades desde el objeto Inmuebles.
-          </p>
-        ) : (
-          <div className={styles.grid}>
-            {associatedUnits.map((unit) => {
-              const isSelected = unit.id === selectedId;
-              const towerLabel = towers.find((t) => t.unitIds.includes(unit.id))?.name || unit.torre;
-              return (
-                <button
-                  key={unit.id}
-                  type="button"
-                  aria-pressed={isSelected}
-                  onClick={() => {
-                    const tower = towers.find((t) => t.unitIds.includes(unit.id));
-                    onChange(unit.id, false, tower?.id ?? null);
-                  }}
-                  className={`${styles.opcion} ${isSelected ? styles.opcionActiva : ''}`}
-                >
-                  <div className={styles.opcionHead}>
-                    <span className={styles.opcionNombre}>{unit.codigo_unidad || unit.id_unidad}</span>
-                    {isSelected && <Check className={styles.check} size={16} strokeWidth={2} aria-hidden="true" />}
-                  </div>
-                  <div className={styles.opcionMeta}>
-                    {towerLabel && <span>{towerLabel}</span>}
-                    {unit.piso > 0 && <span>Piso {unit.piso}</span>}
-                    {unit.area_construida > 0 && <span>{unit.area_construida} m²</span>}
-                    {unit.alcobas && <span>{unit.alcobas} hab.</span>}
-                    {unit.banos != null && unit.banos > 0 && <span>{unit.banos} baños</span>}
-                    {unit.estudios != null && unit.estudios > 0 && (
-                      <span>
-                        {unit.estudios} estudio{unit.estudios !== 1 ? 's' : ''}
-                      </span>
-                    )}
-                  </div>
-                  <span className={styles.opcionPrecio}>{formatPrice(unit.valor_unidad_comercial || 0)}</span>
-                </button>
-              );
-            })}
-          </div>
-        ))}
-
       {/* ── Available tab ── */}
-      {activeTab === 'available' &&
-        (availableLoading ? (
+      {availableLoading ? (
           <div className={styles.cargando} role="status">
             <div className={styles.spinner} />
             <span>Cargando unidades disponibles…</span>
@@ -332,7 +258,7 @@ export default function EnhancedUnitSelector({ associatedUnits, availableUnits, 
                 </div>
               ))}
           </div>
-        ))}
+        )}
     </section>
   );
 }
