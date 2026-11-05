@@ -866,7 +866,6 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
             <div hidden={paso !== 1} className={styles.panel}>
               <FinancialCalculator
                 precio={precio}
-                precioLista={unitBasePrice}
                 bonoMax={bonoMax}
                 bonoAplicado={bonoAplicado}
                 onBonoChange={setBonoAplicado}

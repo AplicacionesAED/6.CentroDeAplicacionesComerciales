@@ -7,7 +7,6 @@ import { Badge } from '../../components/ui/Badge.jsx';
 import styles from './FinancialCalculator.module.css';
 export default function FinancialCalculator({
   precio,
-  precioLista,
   bonoMax,
   bonoAplicado,
   onBonoChange,
