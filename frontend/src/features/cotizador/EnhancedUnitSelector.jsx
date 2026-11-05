@@ -105,7 +105,7 @@ export default function EnhancedUnitSelector({ associatedUnits, availableUnits, 
   const { units: projectUnits, loading: projectLoading, refresh: refreshProject } = useProjectUnits(project ?? null);
   const associatedIds = new Set(associatedUnits.map((u) => u.id));
   const filteredAvailable = availableUnits.filter((u) => u.unit_status === 'Disponible');
-  // Fetch towers on mount so they're available for both tabs
+  // Fetch towers on mount
   useEffect(() => {
     setTowersLoading(true);
     fetchTowers()
@@ -146,11 +146,7 @@ export default function EnhancedUnitSelector({ associatedUnits, availableUnits, 
       <h3 className={styles.titulo}>Seleccionar unidad</h3>
 
       {/* Las unidades que ya se cotizaron al negocio salen arriba en "Ya cotizados para este cliente" (Recotizar). */}
-      <div className={styles.tabs}>
-        <span className={styles.tab}>
-          Inmuebles disponibles {project || ''}
-          <span className={styles.conteo}>{availableLoading ? '…' : `(${filteredAvailable.length})`}</span>
-        </span>
+      <div className={styles.acciones}>
         {onRefreshAvailable && (
           <button
             type="button"

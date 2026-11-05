@@ -21,55 +21,16 @@
 }
 
 /* ── Pestanas (subrayado, Section Navigation de DESIGN.md) ── */
-.tabs {
+.acciones {
   display: flex;
-  align-items: stretch;
-  border-bottom: 1px solid var(--color-border-strong);
-  overflow-x: auto;
-}
-
-.tab {
-  padding: 10px 16px;
-  margin-bottom: -1px;
-  background: none;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  font: inherit;
-  font-size: var(--text-body-size);
-  font-weight: 500;
-  color: var(--color-ink-secondary);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
-}
-
-.tab:hover {
-  color: var(--color-ink);
-}
-
-.tab:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-}
-
-.tabActiva {
-  color: var(--color-ink);
-  font-weight: 600;
-  border-bottom-color: var(--color-primary);
-}
-
-.conteo {
-  margin-left: 6px;
-  font-size: var(--text-data-size);
-  color: var(--color-ink-muted);
+  justify-content: flex-end;
 }
 
 .refrescar {
   display: inline-grid;
   place-items: center;
   width: 36px;
-  margin: 0 0 -1px auto;
-  background: none;
+    background: none;
   border: 0;
   color: var(--color-ink-secondary);
   cursor: pointer;
@@ -169,12 +130,6 @@
   outline-offset: 2px;
 }
 
-.opcionActiva {
-  border-color: var(--color-primary);
-  background: var(--color-info-surface);
-  box-shadow: inset 0 0 0 1px var(--color-primary);
-}
-
 .opcionHead {
   display: flex;
   align-items: flex-start;
@@ -186,24 +141,6 @@
   font-size: var(--text-body-size);
   font-weight: 600;
   line-height: 1.3;
-}
-
-.opcionActiva .opcionNombre {
-  color: var(--color-primary);
-}
-
-.opcionPrecio {
-  font-size: var(--text-data-size);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.opcionMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 12px;
-  font-size: var(--text-data-size);
-  color: var(--color-ink-muted);
 }
 
 .opcionRango {
@@ -218,11 +155,6 @@
   font-size: var(--text-data-size);
   font-weight: 600;
   color: var(--color-primary);
-}
-
-.check {
-  color: var(--color-primary);
-  flex: none;
 }
 
 /* ── Migas de pan (volver / torre / vista) ── */
@@ -307,16 +239,6 @@
   color: var(--color-ink);
 }
 
-.filtros {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
 .filtroFila {
   display: flex;
   align-items: center;
@@ -367,37 +289,6 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
   font-weight: 600;
-}
-
-.limpiar {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 6px;
-  background: none;
-  border: 0;
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: var(--text-data-size);
-  font-weight: 600;
-  color: var(--color-ink-secondary);
-  cursor: pointer;
-}
-
-.limpiar:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-primary);
-}
-
-/* ── Resultados ── */
-.lista {
-  max-height: 288px;
-  overflow-y: auto;
-  padding: var(--space-sm);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
 }
 
 .resumen {
