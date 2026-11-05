@@ -508,3 +508,80 @@
     transition: none;
   }
 }
+
+/* ── Paso "Plan de pagos" compacto: detalle bajo cada KPI, tipo de cotizacion y campos en una fila ── */
+.kpiSub {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpiDestacado .kpiSub {
+  color: color-mix(in srgb, #fff 75%, transparent);
+}
+
+.tipoFila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+}
+
+.segmentado {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.segmento {
+  padding: 6px 14px;
+  font: inherit;
+  font-size: var(--text-body-size);
+  font-weight: 500;
+  color: var(--color-ink-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+}
+
+.segmentoActivo {
+  color: var(--color-primary);
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.camposFila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-md);
+  align-items: start;
+}
+
+.valor {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.enlaceMini {
+  padding: 0;
+  font: inherit;
+  color: var(--color-primary);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.enlaceMini:hover {
+  text-decoration: underline;
+}

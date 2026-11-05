@@ -1,0 +1,36 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.detalle {
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}

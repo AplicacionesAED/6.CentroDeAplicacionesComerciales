@@ -36,6 +36,14 @@ export default function FinancialCalculator({
   onAdicionalesChange,
   cuotaInicialPctOverride,
   onCuotaInicialPctOverrideChange,
+  onQuoteTypeChange,
+  precioDetalle,
+  saldoDetalle,
+  cuotasDetalle,
+  separacionFecha,
+  onSeparacionFechaChange,
+  separacionFechaMin,
+  separacionFechaMax,
 }) {
   const { minMonthlyQuota, config, role } = useAppConfig();
   const { formatPrice, isUSD, exchangeRate } = useCurrency();
@@ -158,50 +166,63 @@ export default function FinancialCalculator({
   const advancedActiveCount = [!!subsidioId, adicionalesIds.length > 0, modo100, abonoActivo].filter(Boolean).length;
   return (
     <div className={styles.root}>
-      {/* ── Resumen — fijo arriba mientras se scrollea el resto de la columna,
-            para que Precio Total / Cuota Inicial / Saldo / Cuota Mensual (los números
-            que de verdad importan para cerrar la venta) nunca queden fuera de vista. ── */}
+      {/* ── Resumen — fijo arriba mientras se scrollea el resto de la columna: Precio total / Cuota inicial / Saldo /
+            Valor cuota son los numeros que de verdad importan para cerrar la venta, con su detalle debajo. ── */}
       <dl className={styles.resumen}>
         <div className={styles.kpi}>
           <dt>Precio total</dt>
           <dd className={styles.kpiPrimario} title={formatPrice(precioTotal)}>
             {formatPrice(precioTotal)}
           </dd>
+          {precioDetalle && <span className={styles.kpiSub}>{precioDetalle}</span>}
         </div>
         <div className={styles.kpi}>
           <dt>Cuota inicial ({modo100 ? 100 : cuotaInicialPctDisplay}%)</dt>
           <dd title={formatPrice(cuotaInicialTotal)}>{formatPrice(cuotaInicialTotal)}</dd>
+          <span className={styles.kpiSub}>Separación {formatPrice(separacion)} incluida</span>
         </div>
         <div className={styles.kpi}>
           <dt>Saldo ({100 - (modo100 ? 100 : cuotaInicialPctDisplay)}%)</dt>
           <dd title={formatPrice(calc.saldo)}>{formatPrice(calc.saldo)}</dd>
+          {saldoDetalle && <span className={styles.kpiSub}>{saldoDetalle}</span>}
         </div>
         <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
           <dt>{hasCustomQuotas ? 'Cuota mensual' : 'Valor cuota'}</dt>
           <dd>{hasCustomQuotas ? 'Variable' : formatPrice(calc.valorCuotaMensual)}</dd>
+          {cuotasDetalle && <span className={styles.kpiSub}>{cuotasDetalle}</span>}
         </div>
       </dl>
 
-      {/* ── Condiciones de la cotización (precio + plan de pagos, en una sola tarjeta compacta) ── */}
+      {/* ── Condiciones: tipo de cotizacion + campos en una sola fila. Lo que no es editable se ve como texto plano. ── */}
       <section className={styles.tarjeta}>
-        <header className={styles.tarjetaHead}>
-          <h3 className={styles.tarjetaTitulo}>Condiciones de la cotización</h3>
-          <Badge variant={isEstandar ? 'success' : 'info'}>{isEstandar ? 'Estándar' : 'Modelador'}</Badge>
-        </header>
-
         <div className={styles.cuerpo}>
-          {/* ── Precio de Lista + Bono (cuando aplica) ── */}
-          <div className={styles.grid2}>
-            <div className={styles.campo}>
-              <span className={styles.label}>Precio de lista</span>
-              <div className={`${styles.control} ${styles.soloLectura}`}>{formatPrice(precioLista ?? precio)}</div>
+          <div className={styles.tipoFila}>
+            <span className={styles.label}>Tipo de cotización</span>
+            <div className={styles.segmentado} role="radiogroup" aria-label="Tipo de cotización">
+              {[
+                ['estandar', 'Estándar'],
+                ['modelador', 'Modelador'],
+              ].map(([id, nombre]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={quoteType === id}
+                  onClick={() => onQuoteTypeChange(id)}
+                  className={`${styles.segmento} ${quoteType === id ? styles.segmentoActivo : ''}`}
+                >
+                  {nombre}
+                </button>
+              ))}
             </div>
+            <span className={styles.ayuda}>{isEstandar ? 'Cuotas fijas según entrega. Solo el bono es editable.' : 'Puedes editar separación, plazo y cada cuota.'}</span>
+          </div>
 
+          <div className={styles.camposFila}>
             {hasBono && (
               <div className={styles.campo}>
-                <label className={`${styles.label} ${styles.labelFila}`} htmlFor="cot-bono">
-                  <span>Bono</span>
-                  <span className={styles.labelNota}>Máx {formatPrice(bonoMax)}</span>
+                <label className={styles.label} htmlFor="cot-bono">
+                  Bono
                 </label>
                 <div className={styles.moneda}>
                   <span className={styles.prefijo} aria-hidden="true">
@@ -221,8 +242,135 @@ export default function FinancialCalculator({
                     className={`${styles.control} ${styles.conPrefijo}`}
                   />
                 </div>
+                <span className={styles.labelNota}>
+                  Máx {formatPrice(bonoMax)} ·{' '}
+                  <button type="button" className={styles.enlaceMini} onClick={() => onBonoChange(bonoMax)}>
+                    Usar máximo
+                  </button>
+                </span>
               </div>
             )}
+
+            <div className={styles.campo}>
+              <label className={styles.label} htmlFor="cot-separacion">
+                Separación
+              </label>
+              {isEstandar ? (
+                <span className={styles.valor}>{formatPrice(separacion)}</span>
+              ) : (
+                <div className={styles.moneda}>
+                  <span className={styles.prefijo} aria-hidden="true">
+                    $
+                  </span>
+                  <input
+                    id="cot-separacion"
+                    type="text"
+                    inputMode="decimal"
+                    value={sepStr}
+                    onChange={handleSeparacionInputChange}
+                    onBlur={handleBlurSeparation}
+                    onFocus={(e) => {
+                      sepFocused.current = true;
+                      e.target.select();
+                    }}
+                    className={`${styles.control} ${styles.conPrefijo}`}
+                  />
+                </div>
+              )}
+              {!isEstandar && <span className={styles.labelNota}>{role === 'admin' ? 'Sin mínimo' : `Mín ${formatPrice(separacionMinima)}`}</span>}
+            </div>
+
+            <div className={styles.campo}>
+              <label className={styles.label} htmlFor="cot-fecha-separacion">
+                Fecha de separación
+              </label>
+              {onSeparacionFechaChange ? (
+                <input
+                  id="cot-fecha-separacion"
+                  type="date"
+                  value={separacionFecha}
+                  min={separacionFechaMin}
+                  max={separacionFechaMax}
+                  onChange={(e) => onSeparacionFechaChange(e.target.value)}
+                  className={styles.control}
+                />
+              ) : null}
+              {!isEstandar && <span className={styles.labelNota}>Este mes</span>}
+            </div>
+
+            <div className={styles.campo}>
+              <label className={styles.label} htmlFor="cot-plazo">
+                Plazo (meses)
+              </label>
+              {isEstandar ? (
+                <span className={styles.valor}>{cuotas} meses</span>
+              ) : (
+                <input
+                  id="cot-plazo"
+                  type="text"
+                  inputMode="numeric"
+                  value={cuotasStr}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^\d]/g, '');
+                    if (raw === '') {
+                      setCuotasStr('');
+                      return;
+                    }
+                    const value = role === 'admin' ? Number(raw) : Math.min(config.cuotasEstandar, Number(raw));
+                    setCuotasStr(String(value));
+                    onCuotasChange(value);
+                  }}
+                  onBlur={() => {
+                    if (cuotasStr === '' || Number(cuotasStr) < 1) {
+                      onCuotasChange(1);
+                      setCuotasStr('1');
+                    }
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  className={styles.control}
+                />
+              )}
+              {!isEstandar && <span className={styles.labelNota}>{role === 'admin' ? 'Sin límite' : `Máx ${config.cuotasEstandar}`}</span>}
+            </div>
+
+            <div className={styles.campo}>
+              <span className={styles.label}>{modo100 ? 'Total a financiar' : 'Cuota inicial'}</span>
+              {modo100 ? (
+                <span className={styles.valor}>100 %</span>
+              ) : onCuotaInicialPctOverrideChange ? (
+                <span className={styles.pctGrupo}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    step="0.01"
+                    value={cuotaPctStr}
+                    onChange={handleCuotaPctChange}
+                    onFocus={(e) => {
+                      cuotaPctFocused.current = true;
+                      e.target.select();
+                    }}
+                    onBlur={handleCuotaPctBlur}
+                    aria-label="Porcentaje de cuota inicial"
+                    className={`${styles.control} ${styles.pctInput}`}
+                  />
+                  <span className={styles.pctSigno}>%</span>
+                  {cuotaInicialPctOverride != null && (
+                    <button
+                      type="button"
+                      className={styles.reset}
+                      onClick={() => onCuotaInicialPctOverrideChange(null)}
+                      title={`Volver al ${config.cuotaInicialPct ?? 30}% configurado`}
+                    >
+                      Restablecer
+                    </button>
+                  )}
+                </span>
+              ) : (
+                <span className={styles.valor}>{cuotaInicialPctDisplay} %</span>
+              )}
+              <span className={styles.labelNota}>{formatPrice(cuotaInicialTotal)}</span>
+            </div>
           </div>
 
           {/* ── Descuento Especial (read-only) ── */}
@@ -246,11 +394,30 @@ export default function FinancialCalculator({
             </div>
           )}
 
-          {/* ── Bono cap warning ── */}
+          {/* ── Mensajes de validación ── */}
           {showBonoMaxMsg && (
             <div className={`${styles.aviso} ${styles.avisoAdvertencia}`} role="status">
               <CircleAlert size={16} strokeWidth={1.75} aria-hidden="true" />
               <span>Se ha llegado al tope máximo de bono asignado a este inmueble.</span>
+            </div>
+          )}
+
+          {showAutoCorrectMsg && (
+            <div className={`${styles.aviso} ${styles.avisoAdvertencia}`} role="status">
+              <CircleAlert size={16} strokeWidth={1.75} aria-hidden="true" />
+              <span>
+                Se ajustó la separación al mínimo permitido de {formatPrice(separacionMinima)} ({separacionMinimaDetalle}).
+              </span>
+            </div>
+          )}
+
+          {cuotaBelowMin && (
+            <div className={`${styles.aviso} ${styles.avisoError}`} role="alert">
+              <TriangleAlert size={16} strokeWidth={1.75} aria-hidden="true" />
+              <div>
+                <p className={styles.avisoTitulo}>Cuota mensual inferior al mínimo permitido</p>
+                <p>No puede ser menor a {formatPrice(minMonthlyQuota)}. Disminuye la separación o reduce el número de cuotas.</p>
+              </div>
             </div>
           )}
 
@@ -268,136 +435,6 @@ export default function FinancialCalculator({
               )
             </p>
           )}
-
-          <div className={styles.seccion}>
-            {/* ── Separación + Plazo ── */}
-            <div className={styles.grid2}>
-              <div className={styles.campo}>
-                <label className={`${styles.label} ${styles.labelFila}`} htmlFor="cot-separacion">
-                  <span>Separación</span>
-                  {!isEstandar && <span className={styles.labelNota}>{role === 'admin' ? 'Sin mínimo' : `Mín ${formatPrice(separacionMinima)}`}</span>}
-                </label>
-                <div className={styles.moneda}>
-                  <span className={styles.prefijo} aria-hidden="true">
-                    $
-                  </span>
-                  <input
-                    id="cot-separacion"
-                    type="text"
-                    inputMode="decimal"
-                    value={sepStr}
-                    onChange={handleSeparacionInputChange}
-                    onBlur={handleBlurSeparation}
-                    onFocus={(e) => {
-                      sepFocused.current = true;
-                      e.target.select();
-                    }}
-                    disabled={isEstandar}
-                    className={`${styles.control} ${styles.conPrefijo}`}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.campo}>
-                <label className={`${styles.label} ${styles.labelFila}`} htmlFor="cot-plazo">
-                  <span>Plazo (meses)</span>
-                  {!isEstandar && <span className={styles.labelNota}>{role === 'admin' ? 'Sin límite' : `Máx ${config.cuotasEstandar}`}</span>}
-                </label>
-                <input
-                  id="cot-plazo"
-                  type="text"
-                  inputMode="numeric"
-                  value={cuotasStr}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^\d]/g, '');
-                    if (raw === '') {
-                      setCuotasStr('');
-                      return;
-                    }
-                    const value = role === 'admin' ? Number(raw) : Math.min(config.cuotasEstandar, Number(raw));
-                    setCuotasStr(String(value));
-                    onCuotasChange(value);
-                  }}
-                  onBlur={() => {
-                    if (cuotasStr === '' || Number(cuotasStr) < 1) {
-                      onCuotasChange(1);
-                      setCuotasStr('1');
-                    }
-                  }}
-                  onFocus={(e) => e.target.select()}
-                  disabled={isEstandar}
-                  className={styles.control}
-                />
-              </div>
-            </div>
-
-            {/* ── Cuota Inicial — una sola línea, con el % editable inline ── */}
-            <div className={styles.cuotaInicial}>
-              <span className={styles.label}>{modo100 ? 'Total a financiar (100%)' : 'Cuota inicial total'}</span>
-              <div className={styles.cuotaInicialValor}>
-                {modo100 ? null : onCuotaInicialPctOverrideChange ? (
-                  <span className={styles.pctGrupo}>
-                    <input
-                      type="number"
-                      min="1"
-                      max="99"
-                      step="0.01"
-                      value={cuotaPctStr}
-                      onChange={handleCuotaPctChange}
-                      onFocus={(e) => {
-                        cuotaPctFocused.current = true;
-                        e.target.select();
-                      }}
-                      onBlur={handleCuotaPctBlur}
-                      aria-label="Porcentaje de cuota inicial"
-                      className={`${styles.control} ${styles.pctInput}`}
-                    />
-                    <span className={styles.pctSigno}>%</span>
-                    {cuotaInicialPctOverride != null && (
-                      <button
-                        type="button"
-                        className={styles.reset}
-                        onClick={() => onCuotaInicialPctOverrideChange(null)}
-                        title={`Volver al ${config.cuotaInicialPct ?? 30}% configurado`}
-                      >
-                        Restablecer
-                      </button>
-                    )}
-                  </span>
-                ) : (
-                  <span className={styles.pctFijo}>({cuotaInicialPctDisplay}%)</span>
-                )}
-                <strong className={styles.cuotaInicialMonto}>{formatPrice(cuotaInicialTotal)}</strong>
-              </div>
-            </div>
-
-            {/* ── Mensajes de validación ── */}
-            {showAutoCorrectMsg && (
-              <div className={`${styles.aviso} ${styles.avisoAdvertencia}`} role="status">
-                <CircleAlert size={16} strokeWidth={1.75} aria-hidden="true" />
-                <span>
-                  Se ajustó la separación al mínimo permitido de {formatPrice(separacionMinima)} ({separacionMinimaDetalle}).
-                </span>
-              </div>
-            )}
-
-            {cuotaBelowMin && (
-              <div className={`${styles.aviso} ${styles.avisoError}`} role="alert">
-                <TriangleAlert size={16} strokeWidth={1.75} aria-hidden="true" />
-                <div>
-                  <p className={styles.avisoTitulo}>Cuota mensual inferior al mínimo permitido</p>
-                  <p>No puede ser menor a {formatPrice(minMonthlyQuota)}. Disminuye la separación o reduce el número de cuotas.</p>
-                </div>
-              </div>
-            )}
-
-            {/* ── Dato complementario (Saldo y Cuota Mensual ya viven en el resumen fijo de
-            arriba — acá solo lo que no está ahí: la suma de todos los pagos mensuales
-            durante el plazo). ── */}
-            <p className={styles.nota}>
-              Pagos mensuales totales: <strong>{formatPrice(calc.montoCuotasIniciales)}</strong>
-            </p>
-          </div>
         </div>
       </section>
 

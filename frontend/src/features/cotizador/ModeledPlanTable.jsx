@@ -22,12 +22,11 @@ export default function ModeledPlanTable({
   onSeparacionFechaChange,
   separacionFechaMin,
   separacionFechaMax,
+  onRestablecer,
 }) {
   const { formatPrice, isUSD, exchangeRate } = useCurrency();
   const { modeledPlan, fixedQuotas, setFixedQuota, warning, financialSummary } = modeledPlanData;
   // Cuota inicial total derivada del calc real (ya refleja el % configurado por proyecto)
-  const cuotaInicialTotal = standardCalc.precio - standardCalc.saldo;
-  const modeledSeparationPct = (modeledCalc.separacion / cuotaInicialTotal) * 100;
   const saldoPct = standardCalc.precio > 0 ? Math.round((standardCalc.saldo / standardCalc.precio) * 100) : 0;
   // Convert COP ↔ display currency for editable cells
   const displayToCOP = (display) => (isUSD && exchangeRate ? Math.round(display * exchangeRate) : display);
@@ -87,6 +86,8 @@ export default function ModeledPlanTable({
   };
   const editableNumeros = modeledPlan.map((entry, idx) => (isEditableRow(idx, entry) ? entry.numero : null)).filter((n) => n !== null);
   const [selectedQuotas, setSelectedQuotas] = useState(new Set());
+  const [rangoAbierto, setRangoAbierto] = useState(false);
+  const [verTodas, setVerTodas] = useState(false);
   const [rangoDesde, setRangoDesde] = useState('');
   const [rangoHasta, setRangoHasta] = useState('');
   const [bulkValorStr, setBulkValorStr] = useState('');
@@ -127,6 +128,20 @@ export default function ModeledPlanTable({
   const releaseSelected = () => {
     selectedQuotas.forEach((numero) => setFixedQuota(numero, null));
   };
+  const liberarTodas = () => editableNumeros.forEach((numero) => setFixedQuota(numero, null));
+  // Cronograma compacto: solo las primeras cuotas y el saldo final; las del medio se abren con "Ver las N cuotas restantes".
+  // Una cuota fija, abono, subsidio, con fecha extraordinaria o seleccionada siempre se ve.
+  const esColapsable = (idx, entry) =>
+    idx > 8 &&
+    idx !== modeledPlan.length - 1 &&
+    !entry.isFixed &&
+    !entry.isAbono &&
+    !entry.esFechaExtraordinaria &&
+    !(subsidioNombre && entry.numero === subsidioCuotaNumero) &&
+    !selectedQuotas.has(entry.numero);
+  const idxColapsables = modeledPlan.map((entry, idx) => (esColapsable(idx, entry) ? idx : -1)).filter((idx) => idx >= 0);
+  const ocultas = verTodas ? 0 : idxColapsables.length;
+  const primeraOculta = idxColapsables[0];
   const fmtNum = (n) => new Intl.NumberFormat('es-CO').format(n);
   const recargoFocused = useRef(false);
   const [recargoStr, setRecargoStr] = useState(fmtNum(Math.abs(effectiveRecargo)));
@@ -159,11 +174,30 @@ export default function ModeledPlanTable({
 
       <section className={table.card}>
         <header className={table.head}>
-          <h3 className={table.titulo}>Tabla modelada</h3>
-          <Badge variant="info">Separación: {modeledSeparationPct.toFixed(1)}% de la cuota inicial</Badge>
+          <h3 className={table.titulo}>
+            Cronograma <span className={styles.conteo}>{modeledPlan.length} pagos · editar una cuota la fija; las libres se reparten el resto</span>
+          </h3>
+          <div className={styles.accionesCabecera}>
+            <Button variant="secondary" onClick={() => setRangoAbierto((v) => !v)} aria-expanded={rangoAbierto}>
+              Aplicar a un rango…
+            </Button>
+            <Button variant="secondary" onClick={liberarTodas}>
+              Liberar todas
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                liberarTodas();
+                onRestablecer?.();
+              }}
+            >
+              Restablecer a estándar
+            </Button>
+          </div>
         </header>
 
         {/* Edición masiva: seleccionar por checkbox y/o por rango, luego fijar todas al mismo valor */}
+        {(rangoAbierto || selectedQuotas.size > 0) && (
         <div className={styles.masiva}>
           <span className={styles.masivaTitulo}>Edición masiva:</span>
           <div className={styles.rango}>
@@ -226,6 +260,7 @@ export default function ModeledPlanTable({
             </div>
           )}
         </div>
+        )}
 
         <div className={table.scroll}>
           <table className={table.tabla}>
@@ -256,6 +291,17 @@ export default function ModeledPlanTable({
             </thead>
             <tbody>
               {modeledPlan.map((entry, idx) => {
+                if (!verTodas && idxColapsables.includes(idx)) {
+                  return idx === primeraOculta ? (
+                    <tr key="ver-mas">
+                      <td colSpan={colsTabla} className={styles.verMasCelda}>
+                        <button type="button" onClick={() => setVerTodas(true)} className={styles.enlace}>
+                          Ver las {ocultas} cuotas restantes
+                        </button>
+                      </td>
+                    </tr>
+                  ) : null;
+                }
                 const isFirst = idx === 0;
                 const isLast = idx === modeledPlan.length - 1;
                 const isSubsidyRow = !!subsidioNombre && entry.numero === subsidioCuotaNumero;
@@ -437,6 +483,15 @@ export default function ModeledPlanTable({
                   </Fragment>
                 );
               })}
+              {verTodas && idxColapsables.length > 0 && (
+                <tr key="ver-menos">
+                  <td colSpan={colsTabla} className={styles.verMasCelda}>
+                    <button type="button" onClick={() => setVerTodas(false)} className={styles.enlace}>
+                      Ver menos
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tbody>
             <tfoot>
               <tr>

@@ -241,3 +241,24 @@
   color: var(--color-warning, #b45309);
   font-weight: 500;
 }
+
+/* Datos del plan en la barra inferior del paso Plan de pagos (cuota inicial / asignado / diferencia / resultado). */
+.pieDatos {
+  flex: 1;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs, 6px) var(--space-lg);
+}
+
+.pieDatos dt {
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}
+
+.pieDatos dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

@@ -275,3 +275,22 @@
   font-size: var(--text-data-size);
   font-weight: 600;
 }
+
+/* ── Cronograma compacto ── */
+.conteo {
+  margin-left: var(--space-sm);
+  font-family: var(--font-body);
+  font-size: var(--text-label-size);
+  font-weight: 400;
+  color: var(--color-ink-muted);
+}
+
+.accionesCabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.verMasCelda {
+  text-align: center;
+}

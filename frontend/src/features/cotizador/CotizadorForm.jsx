@@ -15,8 +15,8 @@ import AccesoriosSection from './AccesoriosSection.jsx';
 import CotizacionesPrevias from './CotizacionesPrevias.jsx';
 import PropertyDisplay from './PropertyDisplay.jsx';
 import FinancialCalculator from './FinancialCalculator.jsx';
-import PaymentPlan from './PaymentPlan.jsx';
-import QuoteTypeSelector from './QuoteTypeSelector.jsx';
+import PlanEstandarCompacto from './PlanEstandarCompacto.jsx';
+import { useCurrency } from '../../context/CurrencyContext.jsx';
 import ModeledPlanTable from './ModeledPlanTable.jsx';
 import DealInfo from './DealInfo.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -30,6 +30,7 @@ import { useModeledPlan } from '../../hooks/useModeledPlan.js';
 export default function CotizadorForm({ dealId, deal, dealLoading, associatedUnits, availableUnits, availableLoading, onRefreshAvailable }) {
   const { config, role, setActiveProject } = useAppConfig();
   const { usuario: user } = useAuth();
+  const { formatPrice } = useCurrency();
   // Financial config follows the open deal's own project (Oliv/Matimba/Alegra/Almar)
   useEffect(() => {
     if (deal?.proyecto_inmobiliario_cac) setActiveProject(deal.proyecto_inmobiliario_cac);
@@ -301,6 +302,14 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   const handleModo100Change = (v) => {
     setModo100(v);
     if (v) setAbonoActivo(false);
+  };
+  // "Restablecer a estándar" del Modelador: separación, plazo, modo y abono vuelven a lo del plan estándar.
+  const restablecerModelado = () => {
+    separacionManualRef.current = false;
+    setSeparacionModelada(standardCalc.separacion);
+    setCuotasModeladas(config.cuotasEstandar);
+    setAbonoActivo(false);
+    setModo100(false);
   };
   // Modeled Calculation logic
   // En modo 100% las cuotas cubren el precio completo (no solo la cuota inicial) y el saldo es 0.
@@ -741,7 +750,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   // ─── Pasos ───
   // Todos los paneles siguen montados y solo se oculta el de los pasos inactivos,
   // así ningún selector/calculadora pierde su estado al navegar entre pasos.
-  const pasos = ['Inmueble y accesorios', 'Condiciones', 'Plan de pagos', 'Revisión y generación'];
+  const pasos = ['Inmueble y accesorios', 'Plan de pagos', 'Revisión y generación'];
   const esUltimoPaso = paso === pasos.length - 1;
   // Accesorios: si la torre ofrece alguno, hay que decidir (elegir uno o confirmar «Sin accesorios») antes de seguir.
   const hayAccesorios = parkingOptions.length + depositoOptions.length + cuartoUtilOptions.length > 0;
@@ -749,7 +758,38 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   const accesoriosPendientes = selectedUnit !== null && towerObjectId !== null && (parkingLoading || hayAccesorios) && !tieneAccesorio && !sinAccesorios;
   const totalAcumulado = unitBasePrice + parkingPrice + depositoPrice + cuartoUtilPrice;
   // Sin inmueble elegido (o con los accesorios pendientes) no hay nada que configurar: solo el paso 1 es alcanzable.
-  const puedeIrAPaso = (i) => i === 0 || (selectedUnit !== null && !accesoriosPendientes);
+  const puedeIrAPaso = (i) => i === 0 || (selectedUnit !== null && !accesoriosPendientes && !(i >= 2 && isModeledInvalid));
+  // Detalle bajo cada KPI y datos de la barra inferior del paso Plan de pagos.
+  const fmtCop = formatPrice;
+  const ultimaEntrada = activePaymentPlan[activePaymentPlan.length - 1];
+  const detallePrecio = [
+    `Apto ${fmtCop(unitBasePrice)}`,
+    parkingPrice > 0 && `Parq. ${fmtCop(parkingPrice)}`,
+    depositoPrice > 0 && `Dep. ${fmtCop(depositoPrice)}`,
+    cuartoUtilPrice > 0 && `Cuarto útil ${fmtCop(cuartoUtilPrice)}`,
+  ]
+    .filter(Boolean)
+    .join(' + ');
+  const detalleSaldo = ultimaEntrada ? `Contra entrega · ${ultimaEntrada.fecha_estimada}` : '';
+  const cuotasFijas = Object.keys(modeledPlanData.fixedQuotas ?? {}).length;
+  const detalleCuotas = quoteType === 'estandar' ? `${currentCuotas} cuotas iguales` : `${Math.max(0, currentCuotas - cuotasFijas)} libres · ${cuotasFijas} fijas`;
+  const cuotaInicialModelada = modeledCalc.precio - modeledCalc.saldo;
+  const asignadoModelado = modeledPlanFinal.filter((e, i) => i !== modeledPlanFinal.length - 1 && !e.isAbono).reduce((suma, e) => suma + (e.valor || 0), 0);
+  const difModelado = Math.abs(cuotaInicialModelada - asignadoModelado) <= 1 ? 0 : Math.round(cuotaInicialModelada - asignadoModelado);
+  const ajusteFinanciero = ignorarRecargo ? 0 : (recargoOverride ?? modeledPlanData.financialSummary.saldoFinancieroFinal);
+  const datosBarraPlan =
+    quoteType === 'estandar'
+      ? [
+          ['Precio total', fmtCop(currentCalc.precio)],
+          ['Cuota inicial', fmtCop(currentCalc.precio - currentCalc.saldo)],
+          ['Saldo', fmtCop(currentCalc.saldo)],
+        ]
+      : [
+          ['Cuota inicial', fmtCop(cuotaInicialModelada)],
+          ['Asignado', fmtCop(asignadoModelado)],
+          ['Diferencia', difModelado === 0 ? `${fmtCop(0)} ✓` : fmtCop(difModelado)],
+          ['Resultado financiero', ajusteFinanciero === 0 ? 'Sin ajuste' : `${ajusteFinanciero > 0 ? 'Recargo +' : 'Descuento −'}${fmtCop(Math.abs(ajusteFinanciero))}`],
+        ];
   const mensajePaso1 = !selectedUnit
     ? 'Selecciona un inmueble para continuar'
     : accesoriosPendientes
@@ -822,10 +862,8 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
 
         {selectedUnit && (
           <>
-            {/* ── PASO 2 — Condiciones ── */}
+            {/* ── PASO 2 — Plan de pagos (condiciones y cronograma juntos: al cambiar plazo o separación se recalcula aquí mismo) ── */}
             <div hidden={paso !== 1} className={styles.panel}>
-              <QuoteTypeSelector value={quoteType} onChange={setQuoteType} />
-
               <FinancialCalculator
                 precio={precio}
                 precioLista={unitBasePrice}
@@ -838,6 +876,14 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
                 onCuotasChange={setCuotasModeladas}
                 calc={currentCalc}
                 quoteType={quoteType}
+                onQuoteTypeChange={setQuoteType}
+                precioDetalle={detallePrecio}
+                saldoDetalle={detalleSaldo}
+                cuotasDetalle={detalleCuotas}
+                separacionFecha={separacionFecha}
+                onSeparacionFechaChange={setSeparacionFecha}
+                separacionFechaMin={separacionFechaMin}
+                separacionFechaMax={separacionFechaMax}
                 hasCustomQuotas={quoteType === 'modelador' && modeledPlanData.hasChanges}
                 descuentoTipo={descuentoTipo}
                 descuentoPct={descuentoPct}
@@ -858,10 +904,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
                 cuotaInicialPctOverride={cuotaInicialPctOverride}
                 onCuotaInicialPctOverrideChange={role === 'admin' ? setCuotaInicialPctOverride : undefined}
               />
-            </div>
 
-            {/* ── PASO 3 — Plan de pagos ── */}
-            <div hidden={paso !== 2} className={styles.panel}>
               {quoteType === 'modelador' && (
                 <ModeledPlanTable
                   standardCalc={standardCalc}
@@ -875,27 +918,23 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
                   onRecargoOverrideChange={role === 'admin' ? setRecargoOverride : undefined}
                   ignorarRecargo={ignorarRecargo}
                   onIgnorarRecargoChange={role === 'admin' ? setIgnorarRecargo : undefined}
-                  separacionFecha={separacionFecha}
-                  onSeparacionFechaChange={setSeparacionFecha}
-                  separacionFechaMin={separacionFechaMin}
-                  separacionFechaMax={separacionFechaMax}
+                  onRestablecer={restablecerModelado}
                 />
               )}
 
               {quoteType === 'estandar' && (
-                <PaymentPlan
+                <PlanEstandarCompacto
                   entries={activePaymentPlan}
+                  cuotas={currentCuotas}
+                  valorCuota={currentCalc.valorCuotaMensual}
+                  onPersonalizar={() => setQuoteType('modelador')}
                   onToggleFechaExtra={(numero) => toggleFechaExtra('estandar', numero)}
-                  separacionFecha={separacionFecha}
-                  onSeparacionFechaChange={setSeparacionFecha}
-                  separacionFechaMin={separacionFechaMin}
-                  separacionFechaMax={separacionFechaMax}
                 />
               )}
             </div>
 
-            {/* ── PASO 4 — Revisión y generación ── */}
-            <div hidden={paso !== 3} className={styles.panel}>
+            {/* ── PASO 3 — Revisión y generación ── */}
+            <div hidden={paso !== 2} className={styles.panel}>
               <div className={styles.acciones}>
                 <Button onClick={() => handleSubmit(false)} disabled={!canSubmit || submitStatus === 'loading'}>
                   {dealLoading ? (
@@ -972,6 +1011,16 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
           <Button variant="secondary" onClick={() => irAPaso(paso - 1)} disabled={paso === 0 || submitStatus === 'loading'}>
             Anterior
           </Button>
+          {paso === 1 && selectedUnit && (
+            <dl className={styles.pieDatos}>
+              {datosBarraPlan.map(([etiqueta, valor]) => (
+                <div key={etiqueta}>
+                  <dt>{etiqueta}</dt>
+                  <dd>{valor}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
           {paso === 0 && <span className={`${styles.pieMensaje} ${accesoriosPendientes ? styles.pieMensajePendiente : ''}`}>{mensajePaso1}</span>}
           {!esUltimoPaso && (
             <div className={styles.pieAcciones}>
