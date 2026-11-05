@@ -1,0 +1,83 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.bloqueado {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-md);
+  border-style: dashed;
+  color: var(--color-ink-muted);
+  background: var(--color-surface-sunken);
+}
+
+.pendiente {
+  border-color: var(--color-warning, #b45309);
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-title-size);
+  font-weight: var(--text-title-weight);
+  line-height: var(--text-title-line);
+  color: var(--color-ink);
+}
+
+.nota {
+  margin: 2px 0 0;
+  font-size: var(--text-label-size);
+}
+
+.etiquetaPendiente {
+  font-size: var(--text-label-size);
+  font-weight: 500;
+  color: var(--color-warning, #b45309);
+}
+
+.aviso {
+  margin: 0;
+  font-size: var(--text-label-size);
+  color: var(--color-warning, #b45309);
+}
+
+.decision {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.confirmado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.confirmadoTexto {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs, 6px);
+  font-size: var(--text-body-size);
+}
+
+.vacio {
+  margin: 0;
+  font-size: var(--text-body-size);
+  color: var(--color-ink-muted);
+}

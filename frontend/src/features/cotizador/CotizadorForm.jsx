@@ -11,7 +11,8 @@ import QuotePDFAlmar from './pdf/QuotePDFAlmar.jsx';
 import QuotePDFAlegra from './pdf/QuotePDFAlegra.jsx';
 import { associateUnitToDeal, associateParkingToDeal, saveQuoteWithPDF, fetchUnitTower, fetchAccessories } from '../../api/cotizador.js';
 import EnhancedUnitSelector from './EnhancedUnitSelector.jsx';
-import ParkingSelector from './ParkingSelector.jsx';
+import AccesoriosSection from './AccesoriosSection.jsx';
+import CotizacionesPrevias from './CotizacionesPrevias.jsx';
 import PropertyDisplay from './PropertyDisplay.jsx';
 import FinancialCalculator from './FinancialCalculator.jsx';
 import PaymentPlan from './PaymentPlan.jsx';
@@ -45,6 +46,12 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   const [selectedDeposito, setSelectedDeposito] = useState(null);
   const [cuartoUtilOptions, setCuartoUtilOptions] = useState([]);
   const [selectedCuartoUtil, setSelectedCuartoUtil] = useState(null);
+  // El asesor confirmo explicitamente que esta cotizacion va sin accesorios.
+  const [sinAccesorios, setSinAccesorios] = useState(false);
+  const [accesoriosAviso, setAccesoriosAviso] = useState(null);
+  // Cotizacion previa a re-cotizar: sus accesorios se aplican cuando terminan de cargar los de la torre.
+  const recotizarPendienteRef = useRef(null);
+  const [recotizandoId, setRecotizandoId] = useState(null);
   const [quoteType, setQuoteType] = useState('estandar');
   const [bonoAplicado, setBonoAplicado] = useState(0);
   const [subsidioId, setSubsidioId] = useState('');
@@ -372,7 +379,6 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
       setSubmitStatus('idle');
       setErrorMessage('');
       setAssociationWarning(null);
-      setSelectedParking(null);
       setGeneratedPdfBlob(null);
     }
   }, [selectedUnit]);
@@ -390,23 +396,63 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   }, [selectedUnitId]);
   // Fetch parking spots when tower is known. dealId is passed so parking already
   // reserved for THIS deal on a previous quote still shows up even if marked 'Separado'.
+  // Seleccion vigente de accesorios, para que el efecto de carga la lea sin depender de ella.
+  const seleccionRef = useRef({});
+  seleccionRef.current = { parking: selectedParking, deposito: selectedDeposito, cuartoUtil: selectedCuartoUtil };
+  // Deja elegidos los accesorios de una cotizacion previa (los que sigan disponibles) y copia su decision.
+  const aplicarAccesoriosDe = useCallback((q, opciones, avisoExtra = '') => {
+    const buscar = (lista, id) => (id ? (lista.find((o) => o.id === id) ?? null) : null);
+    const parking = buscar(opciones.parking, q.parking_id);
+    const deposito = buscar(opciones.depositos, q.deposito_id);
+    const cuartoUtil = buscar(opciones.cuartosUtiles, q.cuarto_util_id);
+    setSelectedParking(parking);
+    setSelectedDeposito(deposito);
+    setSelectedCuartoUtil(cuartoUtil);
+    const tuvo = [q.parking_id, q.deposito_id, q.cuarto_util_id].filter(Boolean).length;
+    const quedaron = [parking, deposito, cuartoUtil].filter(Boolean).length;
+    setSinAccesorios(tuvo === 0);
+    const faltante = quedaron < tuvo ? 'Algún accesorio de esa cotización ya no está disponible y no se cargó.' : '';
+    setAccesoriosAviso([avisoExtra, faltante].filter(Boolean).join(' ') || null);
+  }, []);
   useEffect(() => {
     if (!towerObjectId) {
       setParkingOptions([]);
       setDepositoOptions([]);
       setCuartoUtilOptions([]);
+      setSelectedParking(null);
+      setSelectedDeposito(null);
+      setSelectedCuartoUtil(null);
       return;
     }
     setParkingLoading(true);
     fetchAccessories(towerObjectId, dealId)
       .then((data) => {
-        setParkingOptions(data.parking || []);
-        setDepositoOptions(data.depositos || []);
-        setCuartoUtilOptions(data.cuartosUtiles || []);
+        const opciones = { parking: data.parking || [], depositos: data.depositos || [], cuartosUtiles: data.cuartosUtiles || [] };
+        setParkingOptions(opciones.parking);
+        setDepositoOptions(opciones.depositos);
+        setCuartoUtilOptions(opciones.cuartosUtiles);
+        const previa = recotizarPendienteRef.current;
+        recotizarPendienteRef.current = null;
+        if (previa) {
+          aplicarAccesoriosDe(previa.q, opciones, previa.avisoExtra);
+          return;
+        }
+        // Al cambiar de apto se conservan los accesorios que tambien se ofrecen en esta torre; los demas se quitan y se avisa.
+        const actual = seleccionRef.current;
+        const conservar = (lista, sel) => (sel ? (lista.find((o) => o.id === sel.id) ?? null) : null);
+        const parking = conservar(opciones.parking, actual.parking);
+        const deposito = conservar(opciones.depositos, actual.deposito);
+        const cuartoUtil = conservar(opciones.cuartosUtiles, actual.cuartoUtil);
+        setSelectedParking(parking);
+        setSelectedDeposito(deposito);
+        setSelectedCuartoUtil(cuartoUtil);
+        const antes = [actual.parking, actual.deposito, actual.cuartoUtil].filter(Boolean).length;
+        const ahora = [parking, deposito, cuartoUtil].filter(Boolean).length;
+        setAccesoriosAviso(ahora < antes ? 'Se quitaron accesorios que no se ofrecen en la torre de este inmueble.' : null);
       })
       .catch((err) => console.error('Error fetching parking:', err))
       .finally(() => setParkingLoading(false));
-  }, [towerObjectId, dealId]);
+  }, [towerObjectId, dealId, aplicarAccesoriosDe]);
   // La separación auto-sigue el mínimo configurado (AppConfig.separacionModo/Pct/minSeparation)
   // cuando el precio cambia (bono, parqueadero, descuento). Si el usuario fijó un valor mayor,
   // se respeta (solo sube si el nuevo mínimo lo supera).
@@ -444,6 +490,59 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
     setTowerName(null);
   }, []);
   const [associationWarning, setAssociationWarning] = useState(null);
+  // Elegir un accesorio es una decision; quitar el ultimo vuelve la seccion a "pendiente".
+  const handleSeleccionAccesorio = useCallback((tipo, valor) => {
+    if (tipo === 'parking') setSelectedParking(valor);
+    else if (tipo === 'deposito') setSelectedDeposito(valor);
+    else setSelectedCuartoUtil(valor);
+    if (valor) setSinAccesorios(false);
+    setAccesoriosAviso(null);
+  }, []);
+  const handleSinAccesorios = useCallback((valor) => {
+    if (valor) {
+      setSelectedParking(null);
+      setSelectedDeposito(null);
+      setSelectedCuartoUtil(null);
+    }
+    setSinAccesorios(valor);
+    setAccesoriosAviso(null);
+  }, []);
+  // Recotizar: vuelve a cargar el inmueble y los accesorios de una cotizacion previa de este negocio.
+  const handleRecotizar = useCallback(
+    async (q) => {
+      const unidad = allUnits.find((u) => u.id === q.unit_id);
+      if (!unidad) {
+        setAccesoriosAviso('Ese inmueble ya no está disponible para cotizar.');
+        return;
+      }
+      setRecotizandoId(q.id);
+      try {
+        const tower = await fetchUnitTower(q.unit_id).catch(() => null);
+        const torreId = tower?.id ?? null;
+        const anterior = Number(q.snapshot_json?.unit?.valor_unidad_comercial);
+        const avisoExtra =
+          anterior > 0 && Math.round(anterior) !== Math.round(unidad.valor_unidad_comercial)
+            ? 'El precio del inmueble cambió desde esa cotización: se usa el precio actual.'
+            : '';
+        setSelectedUnitId(unidad.id);
+        setNeedsAssociation(!associatedUnits.some((u) => u.id === unidad.id));
+        setTowerName(null);
+        setTowerObjectId(torreId);
+        if (torreId && torreId === towerObjectId) {
+          // Misma torre: las opciones ya estan cargadas, no hay nueva carga que espere.
+          aplicarAccesoriosDe(q, { parking: parkingOptions, depositos: depositoOptions, cuartosUtiles: cuartoUtilOptions }, avisoExtra);
+        } else if (torreId) {
+          recotizarPendienteRef.current = { q, avisoExtra };
+        } else {
+          recotizarPendienteRef.current = null;
+          setAccesoriosAviso(avisoExtra || null);
+        }
+      } finally {
+        setRecotizandoId(null);
+      }
+    },
+    [allUnits, associatedUnits, towerObjectId, parkingOptions, depositoOptions, cuartoUtilOptions, aplicarAccesoriosDe]
+  );
   const handleSubmit = useCallback(
     async (skipDealStage = false) => {
       if (!selectedUnit || !deal || precio <= 0) return;
@@ -642,10 +741,20 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   // ─── Pasos ───
   // Todos los paneles siguen montados y solo se oculta el de los pasos inactivos,
   // así ningún selector/calculadora pierde su estado al navegar entre pasos.
-  const pasos = ['Inmueble', 'Accesorios Inmobiliarios', 'Condiciones', 'Plan de pagos', 'Revisión y generación'];
+  const pasos = ['Inmueble y accesorios', 'Condiciones', 'Plan de pagos', 'Revisión y generación'];
   const esUltimoPaso = paso === pasos.length - 1;
-  // Sin inmueble elegido no hay nada que configurar: solo el paso 1 es alcanzable.
-  const puedeIrAPaso = (i) => i === 0 || selectedUnit !== null;
+  // Accesorios: si la torre ofrece alguno, hay que decidir (elegir uno o confirmar «Sin accesorios») antes de seguir.
+  const hayAccesorios = parkingOptions.length + depositoOptions.length + cuartoUtilOptions.length > 0;
+  const tieneAccesorio = !!(selectedParking || selectedDeposito || selectedCuartoUtil);
+  const accesoriosPendientes = selectedUnit !== null && towerObjectId !== null && (parkingLoading || hayAccesorios) && !tieneAccesorio && !sinAccesorios;
+  const totalAcumulado = unitBasePrice + parkingPrice + depositoPrice + cuartoUtilPrice;
+  // Sin inmueble elegido (o con los accesorios pendientes) no hay nada que configurar: solo el paso 1 es alcanzable.
+  const puedeIrAPaso = (i) => i === 0 || (selectedUnit !== null && !accesoriosPendientes);
+  const mensajePaso1 = !selectedUnit
+    ? 'Selecciona un inmueble para continuar'
+    : accesoriosPendientes
+      ? 'Accesorios: Pendiente'
+      : `Total acumulado: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalAcumulado)}`;
   const irAPaso = (i) => {
     if (!puedeIrAPaso(i)) return;
     setPaso(i);
@@ -675,9 +784,16 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
       </ol>
 
       <div className={styles.form}>
-        {/* ── PASO 1 — Inmueble ── */}
+        {/* ── PASO 1 — Inmueble y accesorios ── */}
         <div hidden={paso !== 0} className={styles.panel}>
           <DealInfo deal={deal} loading={dealLoading} descuentoPct={descuentoPct > 0 ? descuentoPct : undefined} descuentoModo={descuentoModo} />
+
+          <CotizacionesPrevias
+            dealId={dealId}
+            onRecotizar={handleRecotizar}
+            recotizandoId={recotizandoId}
+            precioActual={(q) => allUnits.find((u) => u.id === q.unit_id)?.valor_unidad_comercial ?? null}
+          />
 
           <EnhancedUnitSelector
             associatedUnits={associatedUnits}
@@ -690,35 +806,24 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
           />
 
           {selectedUnit && <PropertyDisplay unit={selectedUnit} towerName={towerName ?? undefined} />}
-        </div>
 
-        {/* ── PASO 2 — Espacios adicionales ── */}
-        <div hidden={paso !== 1} className={styles.panel}>
-          {/* Espacios adicionales agrupados en una sola tarjeta compacta (antes eran
-            3 tarjetas sueltas, cada una con su propio borde + label — triplicaba
-            el "chrome" visual para 3 selectores que en el fondo son la misma cosa). */}
-          {selectedUnit && towerObjectId ? (
-            <div className={styles.card}>
-              <h3 className={styles.cardTitle}>Accesorios Inmobiliarios</h3>
-              <ParkingSelector parking={parkingOptions} loading={parkingLoading} selected={selectedParking} onSelect={setSelectedParking} kind="parqueadero" />
-              <ParkingSelector parking={depositoOptions} loading={parkingLoading} selected={selectedDeposito} onSelect={setSelectedDeposito} kind="deposito" />
-              <ParkingSelector
-                parking={cuartoUtilOptions}
-                loading={parkingLoading}
-                selected={selectedCuartoUtil}
-                onSelect={setSelectedCuartoUtil}
-                kind="cuarto-util"
-              />
-            </div>
-          ) : (
-            <p className={styles.vacio}>Este inmueble no tiene accesorios inmobiliarios disponibles para seleccionar.</p>
-          )}
+          <AccesoriosSection
+            bloqueado={!selectedUnit}
+            cargando={parkingLoading}
+            opciones={{ parking: parkingOptions, depositos: depositoOptions, cuartosUtiles: cuartoUtilOptions }}
+            seleccion={{ parking: selectedParking, deposito: selectedDeposito, cuartoUtil: selectedCuartoUtil }}
+            onSeleccion={handleSeleccionAccesorio}
+            sinAccesorios={sinAccesorios}
+            onSinAccesorios={handleSinAccesorios}
+            pendiente={accesoriosPendientes}
+            aviso={accesoriosAviso}
+          />
         </div>
 
         {selectedUnit && (
           <>
-            {/* ── PASO 3 — Condiciones ── */}
-            <div hidden={paso !== 2} className={styles.panel}>
+            {/* ── PASO 2 — Condiciones ── */}
+            <div hidden={paso !== 1} className={styles.panel}>
               <QuoteTypeSelector value={quoteType} onChange={setQuoteType} />
 
               <FinancialCalculator
@@ -755,8 +860,8 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
               />
             </div>
 
-            {/* ── PASO 4 — Plan de pagos ── */}
-            <div hidden={paso !== 3} className={styles.panel}>
+            {/* ── PASO 3 — Plan de pagos ── */}
+            <div hidden={paso !== 2} className={styles.panel}>
               {quoteType === 'modelador' && (
                 <ModeledPlanTable
                   standardCalc={standardCalc}
@@ -789,8 +894,8 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
               )}
             </div>
 
-            {/* ── PASO 5 — Revisión y generación ── */}
-            <div hidden={paso !== 4} className={styles.panel}>
+            {/* ── PASO 4 — Revisión y generación ── */}
+            <div hidden={paso !== 3} className={styles.panel}>
               <div className={styles.acciones}>
                 <Button onClick={() => handleSubmit(false)} disabled={!canSubmit || submitStatus === 'loading'}>
                   {dealLoading ? (
@@ -867,6 +972,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
           <Button variant="secondary" onClick={() => irAPaso(paso - 1)} disabled={paso === 0 || submitStatus === 'loading'}>
             Anterior
           </Button>
+          {paso === 0 && <span className={`${styles.pieMensaje} ${accesoriosPendientes ? styles.pieMensajePendiente : ''}`}>{mensajePaso1}</span>}
           {!esUltimoPaso && (
             <div className={styles.pieAcciones}>
               <Button onClick={() => irAPaso(paso + 1)} disabled={!puedeIrAPaso(paso + 1)}>

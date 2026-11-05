@@ -227,3 +227,17 @@
   gap: var(--space-sm);
   margin-left: auto;
 }
+
+/* Estado del paso 1 en la barra inferior: aviso de que falta algo, o el total acumulado (apto + accesorios). */
+.pieMensaje {
+  flex: 1;
+  text-align: center;
+  font-size: var(--text-body-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-muted);
+}
+
+.pieMensajePendiente {
+  color: var(--color-warning, #b45309);
+  font-weight: 500;
+}
