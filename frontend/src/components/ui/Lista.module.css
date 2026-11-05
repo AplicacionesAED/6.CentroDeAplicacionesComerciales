@@ -89,15 +89,15 @@
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--color-ink-secondary);
+  color: var(--color-primary);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 
 .limpiar:hover {
-  background: var(--color-surface-sunken);
-  color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  color: var(--color-primary-hover);
 }
 
 /* --- tabla --- */

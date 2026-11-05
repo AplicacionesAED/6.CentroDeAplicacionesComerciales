@@ -32,23 +32,24 @@
 
 .secondary {
   background: #fff;
-  color: var(--color-ink);
-  border-color: var(--color-border-strong);
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
 }
 
 .secondary:hover:not(:disabled) {
-  background: var(--color-surface-hover);
+  background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+  border-color: var(--color-primary);
 }
 
 .ghost {
   background: transparent;
-  color: var(--color-ink-secondary);
+  color: var(--color-primary);
   padding: 6px 10px;
 }
 
 .ghost:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  color: var(--color-primary-hover);
 }
 
 .danger {
