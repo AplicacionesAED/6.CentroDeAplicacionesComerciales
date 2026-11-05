@@ -1,0 +1,82 @@
+/* Barra de contexto del negocio: una sola linea (se reparte en varias solo en pantallas angostas). */
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.negocio {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nombre {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asesor {
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}
+
+.chips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs, 6px);
+}
+
+.chip {
+  padding: 2px 10px;
+  font-size: var(--text-label-size);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.chipVacio {
+  color: var(--color-ink-muted);
+  border-style: dashed;
+}
+
+.origen {
+  margin-left: auto;
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+}
+
+.enlace {
+  color: var(--color-primary);
+}
+
+.skeleton {
+  height: 56px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-sunken);
+  animation: pulso 1.4s ease-in-out infinite;
+}
+
+@keyframes pulso {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

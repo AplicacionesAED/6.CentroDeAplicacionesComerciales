@@ -20,6 +20,9 @@ ENV VITE_API_URL=${VITE_API_URL}
 # Id del objeto de unidades en HubSpot (si se omite, el codigo usa 2-51798334).
 ARG VITE_HUBSPOT_OBJECT_ID=
 ENV VITE_HUBSPOT_OBJECT_ID=${VITE_HUBSPOT_OBJECT_ID}
+# Id del portal de HubSpot: arma el enlace "Completar en HubSpot" del Cotizador (sin el, el enlace no se muestra).
+ARG VITE_HUBSPOT_PORTAL_ID=
+ENV VITE_HUBSPOT_PORTAL_ID=${VITE_HUBSPOT_PORTAL_ID}
 RUN npm run build
 
 # ---------- Stage 2: dependencias del backend (sin devDependencies) ----------
