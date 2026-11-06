@@ -156,3 +156,24 @@ test('modelarPlan: una cuota por encima de su parte sin el check bloquea y dice 
   const sinExceso = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 10, abonoActivo: false, fixedQuotas: { 10: 3000000 }, hoy });
   assert.equal(sinExceso.warning, null);
 });
+
+test('modelarPlan: con todas las cuotas fijadas el redondeo no da un aviso de $0', () => {
+  const standardCalc = calcularFinanciero(509730484, 36, config);
+  const todas = (valor) => Object.fromEntries(Array.from({ length: 36 }, (_, i) => [i + 1, valor]));
+  // Con abono, todas por encima de su parte: el excedente es abono y la cuota inicial queda exacta.
+  const conAbono = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 36, abonoActivo: true, fixedQuotas: todas(5000000), hoy });
+  assert.equal(conAbono.warning, null);
+  assert.equal(conAbono.abonoTotal, 36 * 5000000 - Math.round(standardCalc.montoCuotasIniciales));
+  // Sin abono, todas en su valor redondeado: solo difiere por pesos de redondeo.
+  const redondeado = Math.round(standardCalc.montoCuotasIniciales / 36);
+  const sinAbono = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 36, abonoActivo: false, fixedQuotas: todas(redondeado), hoy });
+  assert.equal(sinAbono.warning, null);
+});
+
+test('modelarPlan: el aviso de cuotas fijas que superan la cuota inicial dice el monto real', () => {
+  const standardCalc = calcularFinanciero(200000000, 10, config);
+  const fixedQuotas = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, 7000000]));
+  const r = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 10, abonoActivo: false, fixedQuotas, hoy });
+  assert.doesNotMatch(r.warning, /por \$\s?0(\D|$)/);
+  assert.match(r.warning, /12\.000\.000/);
+});

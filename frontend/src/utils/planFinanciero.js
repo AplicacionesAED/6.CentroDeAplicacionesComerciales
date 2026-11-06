@@ -130,15 +130,15 @@ export function repartirAbono(fixedQuotas, maxAvailable, activeCuotas, abonoActi
     } else if (n > activeCuotas) {
       abonoTotal += valor;
     } else {
-      const abono = Math.max(0, Math.round(valor - cuotaBase));
-      if (abono > 0) {
-        abonoPorCuota[n] = abono;
-        abonoTotal += abono;
-      }
+      // Sin redondear: la parte "normal" de cada cuota es exactamente su parte de la cuota inicial, asi que
+      // N cuotas fijadas por encima de su parte suman justo el total y no sobra ni falta un peso.
+      const abono = Math.max(0, valor - cuotaBase);
+      if (abono > 0) abonoPorCuota[n] = Math.round(abono);
+      abonoTotal += abono;
       fixed30Sum += valor - abono;
     }
   }
-  return { fixed30Sum, abonoTotal, abonoPorCuota };
+  return { fixed30Sum, abonoTotal: Math.round(abonoTotal), abonoPorCuota };
 }
 
 const fmtCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -278,13 +278,15 @@ export function modelarPlan({
   }
 
   let warning = null;
+  // Los valores se redondean a pesos enteros: se tolera hasta 1 peso por cuota de diferencia.
+  const tolerancia = Math.max(1, activeCuotas);
   const abonoTotalW = abonoTotal;
   const cuotaBaseAviso = activeCuotas > 0 ? maxAvailable / activeCuotas : 0;
   const excesoSinAbono = claves.filter((k) => Number(k) <= activeCuotas).reduce((s, k) => s + Math.max(0, Math.round(fixedQuotas[Number(k)] - cuotaBaseAviso)), 0);
-  if (!abonoActivo && fixed30Sum - maxAvailable > 1) {
+  if (!abonoActivo && fixed30Sum - maxAvailable > tolerancia) {
     // Sin el check de abono, lo que las cuotas fijas pasen de la cuota inicial no tiene a donde ir.
     warning = `Las cuotas fijas (${fmtCOP(fixed30Sum)}) superan la cuota inicial (${fmtCOP(maxAvailable)}) por ${fmtCOP(fixed30Sum - maxAvailable)}. Si quieres abonar ese excedente al saldo contra entrega, activa «Abonar adicionalmente al saldo» en Opciones avanzadas.`;
-  } else if (!abonoActivo && excesoSinAbono > 0) {
+  } else if (!abonoActivo && excesoSinAbono > tolerancia) {
     // Una cuota por encima de su parte de la cuota inicial es casi siempre un abono: sin el check no se deja
     // generar, para que nadie envie una cotizacion donde las demas cuotas bajaron sin que se note.
     warning = `Una cuota paga ${fmtCOP(excesoSinAbono)} por encima de su parte de la cuota inicial y las demás cuotas bajan para compensar. Si ese valor es un abono, activa «Abonar adicionalmente al saldo» en Opciones avanzadas para que se descuente del saldo contra entrega.`;
@@ -294,10 +296,10 @@ export function modelarPlan({
     if (freeCuotaValue < config.minMonthlyQuota) {
       warning = `El valor de las cuotas libres (${fmtCOP(freeCuotaValue)}) está por debajo del mínimo permitido (${fmtCOP(config.minMonthlyQuota)}).`;
     }
-  } else if (saldoRestante > 0) {
-    warning = `La suma de las cuotas fijas no cubre el total requerido de cuota inicial. Faltan ${fmtCOP(saldoRestante)}`;
-  } else if (maxAvailable - fixed30Sum < 0) {
-    warning = `La suma de las cuotas fijas supera el total de la cuota inicial por ${fmtCOP(Math.abs(saldoRestante))}`;
+  } else if (maxAvailable - fixed30Sum > tolerancia) {
+    warning = `La suma de las cuotas fijas no cubre el total requerido de cuota inicial. Faltan ${fmtCOP(maxAvailable - fixed30Sum)}`;
+  } else if (maxAvailable - fixed30Sum < -tolerancia) {
+    warning = `La suma de las cuotas fijas supera el total de la cuota inicial por ${fmtCOP(fixed30Sum - maxAvailable)}`;
   }
 
   const financialSummary =
