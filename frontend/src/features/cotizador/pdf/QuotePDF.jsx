@@ -385,6 +385,7 @@ export default function QuotePDF({
   subsidioMonto = 0,
   adicionalesAplicados = [],
   financialSummary,
+  abonoSaldo = 0,
   conFirmas,
   nombreComprador,
   nombreDirector,
@@ -534,6 +535,12 @@ export default function QuotePDF({
                     valueColor={financialSummary.saldoFinancieroFinal > 0 ? '#DC2626' : '#16A34A'}
                   />
                 )}
+                {abonoSaldo > 0 && (
+                  <>
+                    <Row label={`Saldo Contra Entrega (${calc.precio > 0 ? Math.round(((calc.saldo + abonoSaldo) / calc.precio) * 100) : 0}%)`} value={formatCOP(calc.saldo + abonoSaldo)} teal />
+                    <Row label="Abono adicional al saldo" value={`− ${formatCOP(abonoSaldo)}`} valueColor="#16A34A" teal />
+                  </>
+                )}
                 {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
                   <>
                     <RowGray label="Saldo Contraentrega Propuesta Cliente" value={formatCOP(calc.saldo + financialSummary.saldoFinancieroFinal)} teal />
@@ -541,7 +548,7 @@ export default function QuotePDF({
                   </>
                 ) : (
                   <RowGray
-                    label={`Saldo Contra Entrega (${calc.precio > 0 ? Math.round((calc.saldo / calc.precio) * 100) : 0}%)`}
+                    label={abonoSaldo > 0 ? 'Saldo Contra Entrega a pagar' : `Saldo Contra Entrega (${calc.precio > 0 ? Math.round((calc.saldo / calc.precio) * 100) : 0}%)`}
                     value={formatCOP(calc.saldo)}
                     teal
                   />
@@ -638,6 +645,9 @@ export default function QuotePDF({
                             · + {entry.conceptoExtraordinario} ({formatCOP(entry.montoExtraordinario || 0)})
                           </Text>
                         )}
+                        {entry.abonoParte ? (
+                          <Text style={{ color: '#16A34A', fontFamily: 'Inter', fontWeight: 700 }}> · incluye abono al saldo {formatCOP(entry.abonoParte)}</Text>
+                        ) : null}
                       </Text>
                       <Text
                         style={[
@@ -655,6 +665,12 @@ export default function QuotePDF({
                   ))
                 )}
 
+                {abonoSaldo > 0 && (
+                  <View style={[s.paySaldo, { backgroundColor: '#16A34A' }]}>
+                    <Text style={[s.paySaldoLbl, { color: WHT }]}>Abono adicional al saldo</Text>
+                    <Text style={s.paySaldoVal}>− {formatCOP(abonoSaldo)}</Text>
+                  </View>
+                )}
                 {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
                   <>
                     <View style={s.paySaldo}>

@@ -202,6 +202,7 @@ export default function QuotePDFAlegra({
   subsidioMonto = 0,
   adicionalesAplicados = [],
   financialSummary,
+  abonoSaldo = 0,
 }) {
   const today = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
   const separacionEntry = paymentPlan[0];
@@ -217,7 +218,9 @@ export default function QuotePDFAlegra({
   const unitLine = [unit.tipo_vista, torreLabel, unit.codigo_unidad ? `Apto ${unit.codigo_unidad}` : null].filter(Boolean).join(' · ');
   const saldoContraEntrega =
     quoteType === 'modelador' && calc.saldo > 0 && financialSummary?.saldoFinancieroFinal ? calc.saldo + financialSummary.saldoFinancieroFinal : calc.saldo;
-  const saldoPct = calc.precio > 0 ? Math.round((calc.saldo / calc.precio) * 100) : 0;
+  // Saldo de la cuota inicial pactada (p. ej. 70%) antes de restarle el abono; `calc.saldo` ya viene con el abono restado.
+  const saldoSinAbono = calc.saldo + abonoSaldo;
+  const saldoPct = calc.precio > 0 ? Math.round((saldoSinAbono / calc.precio) * 100) : 0;
   const cuotaInicialPctDisplay = 100 - saldoPct;
   return (
     <Document>
@@ -306,7 +309,7 @@ export default function QuotePDFAlegra({
                   <View style={s.secHeadDark}>
                     <Text style={s.secHeadTxt}>{planLabel}</Text>
                   </View>
-                  <Row label={`Cuota Inicial ${cuotaInicialPctDisplay}%`} value={formatCOP(calc.precio - calc.saldo)} />
+                  <Row label={`Cuota Inicial ${cuotaInicialPctDisplay}%`} value={formatCOP(calc.precio - saldoSinAbono)} />
                   <Row label="Separación" value={formatCOP(calc.separacion)} />
                   <Row label="Saldo Cuotas Iniciales" value={formatCOP(calc.montoCuotasIniciales)} />
                   <Row
@@ -329,13 +332,19 @@ export default function QuotePDFAlegra({
                       valueColor={financialSummary.saldoFinancieroFinal > 0 ? '#DC2626' : '#16A34A'}
                     />
                   )}
+                  {abonoSaldo > 0 && (
+                    <>
+                      <Row label={`Saldo Contraentrega ${saldoPct}%`} value={formatCOP(saldoSinAbono)} />
+                      <Row label="Abono adicional al saldo" value={`− ${formatCOP(abonoSaldo)}`} valueColor="#16A34A" />
+                    </>
+                  )}
                   {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
                     <>
                       <RowHi label="Saldo Contraentrega Propuesta Cliente" value={formatCOP(saldoContraEntrega)} />
                       <RowHi label="Saldo Contraentrega" value={formatCOP(calc.saldo)} />
                     </>
                   ) : (
-                    <RowHi label={`Saldo Contraentrega ${saldoPct}%`} value={formatCOP(calc.saldo)} />
+                    <RowHi label={abonoSaldo > 0 ? 'Saldo Contraentrega a pagar' : `Saldo Contraentrega ${saldoPct}%`} value={formatCOP(calc.saldo)} />
                   )}
                 </View>
 
@@ -378,6 +387,9 @@ export default function QuotePDFAlegra({
                             · + {entry.conceptoExtraordinario} ({formatCOP(entry.montoExtraordinario || 0)})
                           </Text>
                         )}
+                        {entry.abonoParte ? (
+                          <Text style={{ color: '#16A34A', fontFamily: 'Inter', fontWeight: 700 }}> · incluye abono al saldo {formatCOP(entry.abonoParte)}</Text>
+                        ) : null}
                       </Text>
                       <Text
                         style={[
@@ -393,6 +405,12 @@ export default function QuotePDFAlegra({
                       </Text>
                     </View>
                   ))}
+                  {abonoSaldo > 0 && (
+                    <View style={[s.paySaldo, { backgroundColor: '#16A34A' }]}>
+                      <Text style={[s.paySaldoLbl, { color: WHT }]}>Abono adicional al saldo</Text>
+                      <Text style={s.paySaldoVal}>− {formatCOP(abonoSaldo)}</Text>
+                    </View>
+                  )}
                   {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
                     <>
                       <View style={s.paySaldo}>
