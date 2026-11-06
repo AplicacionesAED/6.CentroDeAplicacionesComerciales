@@ -375,6 +375,17 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   const saldoMostrado = modeledCalc.saldo - (abonoActivo ? modeledPlanData.abonoTotal : 0);
   // Abono adicional al saldo: lo que las cuotas pagan por encima de su parte de la cuota inicial.
   const abonoSaldo = quoteType === 'modelador' && abonoActivo ? modeledPlanData.abonoTotal : 0;
+  // El abono dentro del plazo sube la cuota inicial: el plan estandar contra el que se compara la tabla del Modelador
+  // (interes y diferencia acumulada) es el de esa cuota inicial ajustada, igual que lo usa el motor.
+  const abonoDentro = quoteType === 'modelador' && abonoActivo ? modeledPlanData.abonoDentro : 0;
+  const standardParaTabla =
+    abonoDentro > 0
+      ? standardPlan.map((e, i) => {
+          if (i === standardPlan.length - 1) return { ...e, valor: e.valor - abonoDentro };
+          if (e.numero >= 1 && e.numero <= standardCalc.cuotas && !String(e.concepto).startsWith('Subsidio')) return { ...e, valor: e.valor + abonoDentro / standardCalc.cuotas };
+          return e;
+        })
+      : standardPlan;
   // Current Active Config
   const currentCalc = quoteType === 'estandar' ? standardCalc : { ...modeledCalc, saldo: saldoMostrado };
   const currentCuotas = quoteType === 'estandar' ? config.cuotasEstandar : cuotasModeladas;
@@ -779,8 +790,9 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
   const detalleSaldo = ultimaEntrada ? `Contra entrega · ${ultimaEntrada.fecha_estimada}` : '';
   const cuotasFijas = Object.keys(modeledPlanData.fixedQuotas ?? {}).length;
   const detalleCuotas = quoteType === 'estandar' ? `${currentCuotas} cuotas iguales` : `${Math.max(0, currentCuotas - cuotasFijas)} libres · ${cuotasFijas} fijas`;
-  const cuotaInicialModelada = modeledCalc.precio - modeledCalc.saldo;
-  const asignadoModelado = modeledPlanFinal.filter((e, i) => i !== modeledPlanFinal.length - 1 && !e.isAbono).reduce((suma, e) => suma + (e.valor || 0), 0);
+  // Con abono, la cuota inicial total sube en lo que se abona (p. ej. 30% -> 40%) y el saldo baja en lo mismo.
+  const cuotaInicialModelada = modeledCalc.precio - saldoMostrado;
+  const asignadoModelado = modeledPlanFinal.filter((e, i) => i !== modeledPlanFinal.length - 1).reduce((suma, e) => suma + (e.valor || 0), 0);
   const difModelado = Math.abs(cuotaInicialModelada - asignadoModelado) <= 1 ? 0 : Math.round(cuotaInicialModelada - asignadoModelado);
   const ajusteFinanciero = ignorarRecargo ? 0 : (recargoOverride ?? modeledPlanData.financialSummary.saldoFinancieroFinal);
   const datosBarraPlan =
@@ -825,7 +837,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
     ['Tipo de cotización', quoteType === 'estandar' ? 'Estándar' : 'Modelador'],
     ['Separación', fmtCop(currentSeparacion)],
     ['Cuota inicial', `${fmtCop(cuotaInicialRevision)} en ${currentCuotas} cuotas`],
-    ...(abonoSaldo > 0 ? [['Abono al saldo', `− ${fmtCop(abonoSaldo)}`]] : []),
+    ...(abonoSaldo > 0 ? [['Abono adicional', `+ ${fmtCop(abonoSaldo)} (incluido en la cuota inicial)`]] : []),
     ['Saldo final', saldoFinalRevision],
   ];
   const validacionesRevision = [
@@ -924,7 +936,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
                 separacion={currentSeparacion}
                 onSeparacionChange={handleSeparacionChange}
                 onCuotasChange={setCuotasModeladas}
-                calc={{ ...currentCalc, saldo: currentCalc.saldo + abonoSaldo }}
+                calc={currentCalc}
                 abonoSaldo={abonoSaldo}
                 quoteType={quoteType}
                 onQuoteTypeChange={setQuoteType}
@@ -961,7 +973,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
                   standardCalc={standardCalc}
                   modeledCalc={modeledCalc}
                   modeledPlanData={{ ...modeledPlanData, modeledPlan: modeledPlanFinal }}
-                  standardPlan={standardPlan}
+                  standardPlan={standardParaTabla}
                   subsidioCuotaNumero={subsidioAplicaCuotaInicial ? cuotasModeladas + 1 : undefined}
                   subsidioNombre={subsidioAplicaCuotaInicial ? subsidioSeleccionado?.nombre : undefined}
                   onToggleFechaExtra={(numero) => toggleFechaExtra('modelador', numero)}
