@@ -110,3 +110,38 @@ test('formatCOP y formatUSD', () => {
   assert.equal(formatCOP(250000000), '$250.000.000');
   assert.equal(formatUSD(59523), '$59,523');
 });
+
+test('modelarPlan: lo que una cuota paga por encima de su parte de la cuota inicial se abona al saldo', () => {
+  const standardCalc = calcularFinanciero(200000000, 10, config);
+  // Cuota base 5.8M; la ultima paga 50M de mas.
+  const r = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 10, abonoActivo: true, fixedQuotas: { 10: 55800000 }, hoy });
+  assert.equal(r.warning, null);
+  assert.equal(r.abonoTotal, 50000000);
+  const ultima = r.modeledPlan[10];
+  assert.equal(ultima.valor, 55800000);
+  assert.equal(ultima.abonoParte, 50000000);
+  assert.equal(r.modeledPlan[1].valor, 5800000); // las demas cuotas no bajan
+  const saldoFinal = r.modeledPlan[r.modeledPlan.length - 1];
+  assert.equal(saldoFinal.valor, 140000000 - 50000000); // la resta llega al saldo final
+  assert.equal(r.financialSummary.saldoFinancieroFinal, 0); // el abono no genera interes
+  assert.equal(r.modeledPlan.reduce((s, e) => s + e.valor, 0), 200000000);
+});
+
+test('modelarPlan: sin el check, pasarse de la cuota inicial avisa y dice que active el abono', () => {
+  const standardCalc = calcularFinanciero(200000000, 10, config);
+  const fixedQuotas = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, 7000000]));
+  const r = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 10, abonoActivo: false, fixedQuotas, hoy });
+  assert.match(r.warning, /superan la cuota inicial/);
+  assert.match(r.warning, /Abonar adicionalmente al saldo/);
+  const conCheck = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 10, abonoActivo: true, fixedQuotas, hoy });
+  assert.equal(conCheck.warning, null);
+  assert.equal(conCheck.abonoTotal, 12000000); // 10 cuotas de 7M contra una base de 5.8M
+  assert.equal(conCheck.modeledPlan[conCheck.modeledPlan.length - 1].valor, 140000000 - 12000000);
+});
+
+test('modelarPlan: un abono dentro de una cuota no mueve a las cuotas libres', () => {
+  const standardCalc = calcularFinanciero(200000000, 10, config);
+  const r = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 10, abonoActivo: true, fixedQuotas: { 3: 8800000, 10: 20000000 }, hoy });
+  assert.equal(r.abonoTotal, 3000000 + 14200000);
+  assert.equal(r.modeledPlan[1].valor, 5800000);
+});

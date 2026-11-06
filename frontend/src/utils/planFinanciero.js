@@ -109,6 +109,38 @@ export function repartirAjuste(valores, ajuste) {
   return deltas;
 }
 
+/**
+ * Con el abono activo, lo que una cuota fijada paga por encima de su parte de la cuota inicial
+ * (monto de cuotas iniciales / N) es un abono adicional al saldo contra entrega; su parte "normal"
+ * sigue contando a la cuota inicial. Las cuotas fijadas despues del mes N son abono completo.
+ * Sin abono, toda cuota fijada cuenta a la cuota inicial.
+ *
+ * @returns {{ fixed30Sum: number, abonoTotal: number, abonoPorCuota: Object<number, number> }}
+ */
+export function repartirAbono(fixedQuotas, maxAvailable, activeCuotas, abonoActivo) {
+  const cuotaBase = activeCuotas > 0 ? maxAvailable / activeCuotas : 0;
+  const abonoPorCuota = {};
+  let fixed30Sum = 0;
+  let abonoTotal = 0;
+  for (const k of Object.keys(fixedQuotas)) {
+    const n = Number(k);
+    const valor = fixedQuotas[n];
+    if (!abonoActivo) {
+      fixed30Sum += valor;
+    } else if (n > activeCuotas) {
+      abonoTotal += valor;
+    } else {
+      const abono = Math.max(0, Math.round(valor - cuotaBase));
+      if (abono > 0) {
+        abonoPorCuota[n] = abono;
+        abonoTotal += abono;
+      }
+      fixed30Sum += valor - abono;
+    }
+  }
+  return { fixed30Sum, abonoTotal, abonoPorCuota };
+}
+
 const fmtCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
 /**
@@ -121,7 +153,7 @@ const fmtCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', curren
  * @param {object} p.modeledCalc plan modelado (calcularFinanciero)
  * @param {object} p.config configuracion del proyecto
  * @param {number} p.activeCuotas cuantas cuotas reciben el reparto de la cuota inicial
- * @param {boolean} p.abonoActivo si las cuotas > activeCuotas se toman como abono al saldo
+ * @param {boolean} p.abonoActivo lo que una cuota fijada pague por encima de su parte de la cuota inicial (y las cuotas > activeCuotas) se abona al saldo
  * @param {Date} [p.separacionDate] fecha elegida para la Separacion (default: hoy)
  * @param {Object<number, number>} [p.fixedQuotas]
  * @param {number|null} [p.recargoOverride] ajuste manual (admin) del recargo/descuento
@@ -146,10 +178,7 @@ export function modelarPlan({
 
   const claves = Object.keys(fixedQuotas);
   const maxAvailable = modeledCalc.montoCuotasIniciales;
-  // Cuotas fijadas que cuentan a la cuota inicial: si hay abono, solo las de 1..N.
-  const fixed30Sum = claves.filter((k) => !abonoActivo || Number(k) <= activeCuotas).reduce((s, k) => s + fixedQuotas[Number(k)], 0);
-  // Abono: cuotas fijadas en meses > N (solo cuando el abono esta activo).
-  const abonoTotal = abonoActivo ? claves.filter((k) => Number(k) > activeCuotas).reduce((s, k) => s + fixedQuotas[Number(k)], 0) : 0;
+  const { fixed30Sum, abonoTotal, abonoPorCuota } = repartirAbono(fixedQuotas, maxAvailable, activeCuotas, abonoActivo);
   const fixedActiveCount = claves.filter((k) => Number(k) <= activeCuotas).length;
   const cuotasLibresActivas = Math.max(0, activeCuotas - fixedActiveCount);
   const saldoRestante = Math.max(0, maxAvailable - fixed30Sum);
@@ -182,6 +211,7 @@ export function modelarPlan({
             valor: fixedQuotas[baseEntry.numero],
             isFixed: true,
             isAbono: true,
+            abonoParte: fixedQuotas[baseEntry.numero],
             interesGenerado: 0,
             diferenciaAcumulada: runningDiferenciaAcumulada,
           });
@@ -193,11 +223,13 @@ export function modelarPlan({
         // el saldo final, que se compara aparte): sin este limite el saldo final del estandar se
         // colaba aqui como una cuota normal cuando el horizonte modelado supera las cuotas estandar.
         const standardValue = baseEntry.numero <= standardCalc.cuotas ? standardPlan.find((s) => s.numero === baseEntry.numero)?.valor || 0 : 0;
-        runningDiferenciaAcumulada += standardValue - valor;
+        const abonoParte = abonoPorCuota[baseEntry.numero] || 0;
+        // La parte de esta cuota que es abono va al saldo: no cuenta para la diferencia ni el interes.
+        runningDiferenciaAcumulada += standardValue - (valor - abonoParte);
         // ignorarRecargo: el plan queda plano, sin interes que acumular.
         const interesGenerado = ignorarRecargo ? 0 : runningDiferenciaAcumulada * r;
         sumIntereses += interesGenerado;
-        plan.push({ ...baseEntry, valor, isFixed, interesGenerado, diferenciaAcumulada: runningDiferenciaAcumulada });
+        plan.push({ ...baseEntry, valor, isFixed, ...(abonoParte > 0 ? { abonoParte } : {}), interesGenerado, diferenciaAcumulada: runningDiferenciaAcumulada });
       } else {
         // Saldo Final: interes con el saldo original; el valor mostrado se reduce por el abono.
         const standardValue = standardPlan.find((s) => s.numero > standardCalc.cuotas)?.valor || standardPlan[standardPlan.length - 1]?.valor || 0;
@@ -247,7 +279,10 @@ export function modelarPlan({
 
   let warning = null;
   const abonoTotalW = abonoTotal;
-  if (abonoTotalW > modeledCalc.saldo) {
+  if (!abonoActivo && fixed30Sum - maxAvailable > 1) {
+    // Sin el check de abono, lo que las cuotas fijas pasen de la cuota inicial no tiene a donde ir.
+    warning = `Las cuotas fijas (${fmtCOP(fixed30Sum)}) superan la cuota inicial (${fmtCOP(maxAvailable)}) por ${fmtCOP(fixed30Sum - maxAvailable)}. Si quieres abonar ese excedente al saldo contra entrega, activa «Abonar adicionalmente al saldo» en Opciones avanzadas.`;
+  } else if (abonoTotalW > modeledCalc.saldo) {
     warning = `El abono (${fmtCOP(abonoTotalW)}) supera el saldo contra entrega disponible (${fmtCOP(modeledCalc.saldo)}).`;
   } else if (cuotasLibresActivas > 0) {
     if (freeCuotaValue < config.minMonthlyQuota) {
