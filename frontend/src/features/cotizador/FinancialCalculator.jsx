@@ -23,6 +23,7 @@ export default function FinancialCalculator({
   descuentoModo = 'porcentaje',
   descuentoIncluyeParqueadero = false,
   abonoActivo,
+  abonoSaldo = 0,
   onAbonoActivoChange,
   modo100,
   onModo100Change,
@@ -183,7 +184,13 @@ export default function FinancialCalculator({
         <div className={styles.kpi}>
           <dt>Saldo ({100 - (modo100 ? 100 : cuotaInicialPctDisplay)}%)</dt>
           <dd title={formatPrice(calc.saldo)}>{formatPrice(calc.saldo)}</dd>
-          {saldoDetalle && <span className={styles.kpiSub}>{saldoDetalle}</span>}
+          {abonoSaldo > 0 ? (
+            <span className={styles.kpiSub} title={`Abono ${formatPrice(abonoSaldo)} · a pagar ${formatPrice(calc.saldo - abonoSaldo)}`}>
+              Abono −{formatPrice(abonoSaldo)} · a pagar {formatPrice(calc.saldo - abonoSaldo)}
+            </span>
+          ) : (
+            saldoDetalle && <span className={styles.kpiSub}>{saldoDetalle}</span>
+          )}
         </div>
         <div className={`${styles.kpi} ${styles.kpiDestacado}`}>
           <dt>{hasCustomQuotas ? 'Cuota mensual' : 'Valor cuota'}</dt>
@@ -586,7 +593,7 @@ export default function FinancialCalculator({
                     <span className={styles.opcionTexto}>
                       <span className={styles.opcionTitulo}>Abonar adicionalmente al saldo</span>
                       <span className={styles.ayuda}>
-                        Las cuotas después del mes {cuotas} se toman como abono al saldo ({100 - cuotaInicialPctDisplay}%).
+                        Lo que una cuota pague por encima de su parte de la cuota inicial ({cuotaInicialPctDisplay}%) se abona al saldo ({100 - cuotaInicialPctDisplay}%).
                       </span>
                     </span>
                   </span>

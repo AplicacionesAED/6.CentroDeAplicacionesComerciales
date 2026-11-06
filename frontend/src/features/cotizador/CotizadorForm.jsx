@@ -373,6 +373,8 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
       : modeledPlanWithFechas;
   // Saldo contra entrega mostrado = saldo modelado − abonos (los abonos lo reducen)
   const saldoMostrado = modeledCalc.saldo - (abonoActivo ? modeledPlanData.abonoTotal : 0);
+  // Abono adicional al saldo: lo que las cuotas pagan por encima de su parte de la cuota inicial.
+  const abonoSaldo = quoteType === 'modelador' && abonoActivo ? modeledPlanData.abonoTotal : 0;
   // Current Active Config
   const currentCalc = quoteType === 'estandar' ? standardCalc : { ...modeledCalc, saldo: saldoMostrado };
   const currentCuotas = quoteType === 'estandar' ? config.cuotasEstandar : cuotasModeladas;
@@ -644,6 +646,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
             subsidioNombre={subsidioSeleccionado?.nombre}
             subsidioMonto={subsidioMonto > 0 ? subsidioMonto : undefined}
             adicionalesAplicados={adicionalesAplicadosProp}
+            abonoSaldo={abonoSaldo > 0 ? abonoSaldo : undefined}
           />
         ).toBlob();
         // Snapshot con los MISMOS datos que recibe el PDF (para la vista HTML)
@@ -669,6 +672,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
           subsidioMonto: subsidioMonto > 0 ? subsidioMonto : undefined,
           adicionalesAplicados: adicionalesAplicadosProp,
           financialSummary: adjustedFinancialSummary,
+          abonoSaldo: abonoSaldo > 0 ? abonoSaldo : undefined,
           isRecargoAjustado:
             quoteType === 'modelador' && !ignorarRecargo && recargoOverride !== null && modeledPlanData.financialSummary.saldoFinancieroFinal !== 0
               ? true
@@ -743,6 +747,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
       adicionalesAplicadosProp,
       recargoOverride,
       ignorarRecargo,
+      abonoSaldo,
     ]
   );
   // ─── Validation ───
@@ -820,6 +825,7 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
     ['Tipo de cotización', quoteType === 'estandar' ? 'Estándar' : 'Modelador'],
     ['Separación', fmtCop(currentSeparacion)],
     ['Cuota inicial', `${fmtCop(cuotaInicialRevision)} en ${currentCuotas} cuotas`],
+    ...(abonoSaldo > 0 ? [['Abono al saldo', `− ${fmtCop(abonoSaldo)}`]] : []),
     ['Saldo final', saldoFinalRevision],
   ];
   const validacionesRevision = [
@@ -918,7 +924,8 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
                 separacion={currentSeparacion}
                 onSeparacionChange={handleSeparacionChange}
                 onCuotasChange={setCuotasModeladas}
-                calc={currentCalc}
+                calc={{ ...currentCalc, saldo: currentCalc.saldo + abonoSaldo }}
+                abonoSaldo={abonoSaldo}
                 quoteType={quoteType}
                 onQuoteTypeChange={setQuoteType}
                 precioDetalle={detallePrecio}

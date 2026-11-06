@@ -424,6 +424,10 @@ export default function ModeledPlanTable({
                             </div>
                             {/* Sin saldo contraentrega (modo 100%) el recargo/descuento se
                         cobra dentro de las cuotas: se avisa cuánto lleva esta. */}
+                            {/* Abono adicional: la parte de esta cuota que va al saldo contra entrega, no a la cuota inicial. */}
+                            {entry.abonoParte > 0 && (
+                              <span className={`${styles.incluye} ${table.exito}`}>incluye abono al saldo {formatPrice(entry.abonoParte)}</span>
+                            )}
                             {entry.ajusteAlmar && entry.ajusteAlmar.monto !== 0 && (
                               <span className={`${styles.incluye} ${entry.ajusteAlmar.monto > 0 ? table.advertencia : table.exito}`}>
                                 incluye {entry.ajusteAlmar.monto > 0 ? 'recargo +' : 'descuento −'}
@@ -455,6 +459,8 @@ export default function ModeledPlanTable({
                           <Badge variant="neutral">Editada</Badge>
                         ) : isLast ? (
                           <span className={table.muted}>—</span>
+                        ) : entry.abonoParte > 0 && !entry.isAbono ? (
+                          <Badge variant="success">Abono</Badge>
                         ) : entry.isAbono ? (
                           <button
                             type="button"
