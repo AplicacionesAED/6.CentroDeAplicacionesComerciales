@@ -536,10 +536,7 @@ export default function QuotePDF({
                   />
                 )}
                 {abonoSaldo > 0 && (
-                  <>
-                    <Row label={`Saldo Contra Entrega (${calc.precio > 0 ? Math.round(((calc.saldo + abonoSaldo) / calc.precio) * 100) : 0}%)`} value={formatCOP(calc.saldo + abonoSaldo)} teal />
-                    <Row label="Abono adicional al saldo" value={`− ${formatCOP(abonoSaldo)}`} valueColor="#16A34A" teal />
-                  </>
+                  <Row label="Incluye abono adicional" value={`+ ${formatCOP(abonoSaldo)}`} valueColor="#16A34A" teal />
                 )}
                 {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
                   <>
@@ -548,7 +545,7 @@ export default function QuotePDF({
                   </>
                 ) : (
                   <RowGray
-                    label={abonoSaldo > 0 ? 'Saldo Contra Entrega a pagar' : `Saldo Contra Entrega (${calc.precio > 0 ? Math.round((calc.saldo / calc.precio) * 100) : 0}%)`}
+                    label={`Saldo Contra Entrega (${calc.precio > 0 ? Math.round((calc.saldo / calc.precio) * 100) : 0}%)`}
                     value={formatCOP(calc.saldo)}
                     teal
                   />
@@ -667,8 +664,8 @@ export default function QuotePDF({
 
                 {abonoSaldo > 0 && (
                   <View style={[s.paySaldo, { backgroundColor: '#16A34A' }]}>
-                    <Text style={[s.paySaldoLbl, { color: WHT }]}>Abono adicional al saldo</Text>
-                    <Text style={s.paySaldoVal}>− {formatCOP(abonoSaldo)}</Text>
+                    <Text style={[s.paySaldoLbl, { color: WHT }]}>Incluye abono adicional a la cuota inicial</Text>
+                    <Text style={s.paySaldoVal}>+ {formatCOP(abonoSaldo)}</Text>
                   </View>
                 )}
                 {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (

@@ -240,9 +240,7 @@ export default function QuotePDFAlmar({
   const unitLine = [unit.tipo_vista, torreLabel, unit.codigo_unidad ? `Apto ${unit.codigo_unidad}` : null].filter(Boolean).join(' · ');
   const saldoContraEntrega =
     quoteType === 'modelador' && calc.saldo > 0 && financialSummary?.saldoFinancieroFinal ? calc.saldo + financialSummary.saldoFinancieroFinal : calc.saldo;
-  // Saldo de la cuota inicial pactada (p. ej. 70%) antes de restarle el abono; `calc.saldo` ya viene con el abono restado.
-  const saldoSinAbono = calc.saldo + abonoSaldo;
-  const saldoPct = calc.precio > 0 ? Math.round((saldoSinAbono / calc.precio) * 100) : 0;
+  const saldoPct = calc.precio > 0 ? Math.round((calc.saldo / calc.precio) * 100) : 0;
   const cuotaInicialPctDisplay = 100 - saldoPct;
   return (
     <Document>
@@ -334,7 +332,7 @@ export default function QuotePDFAlmar({
                   <View style={s.secHeadDark}>
                     <Text style={s.secHeadTxt}>{planLabel}</Text>
                   </View>
-                  <Row label={`Cuota Inicial ${cuotaInicialPctDisplay}%`} value={formatCOP(calc.precio - saldoSinAbono)} />
+                  <Row label={`Cuota Inicial ${cuotaInicialPctDisplay}%`} value={formatCOP(calc.precio - calc.saldo)} />
                   <Row label="Separación" value={formatCOP(calc.separacion)} />
                   <Row label="Saldo Cuotas Iniciales" value={formatCOP(calc.montoCuotasIniciales)} />
                   <Row
@@ -358,10 +356,7 @@ export default function QuotePDFAlmar({
                     />
                   )}
                   {abonoSaldo > 0 && (
-                    <>
-                      <Row label={`Saldo Contraentrega ${saldoPct}%`} value={formatCOP(saldoSinAbono)} />
-                      <Row label="Abono adicional al saldo" value={`− ${formatCOP(abonoSaldo)}`} valueColor="#16A34A" />
-                    </>
+                    <Row label="Incluye abono adicional" value={`+ ${formatCOP(abonoSaldo)}`} valueColor="#16A34A" />
                   )}
                   {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
                     <>
@@ -369,7 +364,7 @@ export default function QuotePDFAlmar({
                       <RowHi label="Saldo Contraentrega" value={formatCOP(calc.saldo)} />
                     </>
                   ) : (
-                    <RowHi label={abonoSaldo > 0 ? 'Saldo Contraentrega a pagar' : `Saldo Contraentrega ${saldoPct}%`} value={formatCOP(calc.saldo)} />
+                    <RowHi label={`Saldo Contraentrega ${saldoPct}%`} value={formatCOP(calc.saldo)} />
                   )}
                 </View>
 
@@ -432,8 +427,8 @@ export default function QuotePDFAlmar({
                   ))}
                   {abonoSaldo > 0 && (
                     <View style={[s.paySaldo, { backgroundColor: '#16A34A' }]}>
-                      <Text style={[s.paySaldoLbl, { color: WHT }]}>Abono adicional al saldo</Text>
-                      <Text style={s.paySaldoVal}>− {formatCOP(abonoSaldo)}</Text>
+                      <Text style={[s.paySaldoLbl, { color: WHT }]}>Incluye abono adicional a la cuota inicial</Text>
+                      <Text style={s.paySaldoVal}>+ {formatCOP(abonoSaldo)}</Text>
                     </View>
                   )}
                   {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
