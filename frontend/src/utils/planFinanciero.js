@@ -294,6 +294,17 @@ export function modelarPlan({
     warning = `La suma de las cuotas fijas supera el total de la cuota inicial por ${fmtCOP(Math.abs(saldoRestante))}`;
   }
 
+  // Sin el check de abono, una cuota que paga mas que su parte de la cuota inicial no es un error (las libres
+  // bajan para compensar), pero casi siempre es un abono: se sugiere activarlo para que vaya al saldo.
+  let sugerenciaAbono = null;
+  if (!abonoActivo && !warning && activeCuotas > 0) {
+    const cuotaBase = maxAvailable / activeCuotas;
+    const exceso = claves.filter((k) => Number(k) <= activeCuotas).reduce((s, k) => s + Math.max(0, Math.round(fixedQuotas[Number(k)] - cuotaBase)), 0);
+    if (exceso > 0) {
+      sugerenciaAbono = `Una cuota paga ${fmtCOP(exceso)} por encima de su parte de la cuota inicial y las demás cuotas bajan para compensar. Si ese valor es un abono, activa «Abonar adicionalmente al saldo» en Opciones avanzadas para que se descuente del saldo contra entrega.`;
+    }
+  }
+
   const financialSummary =
     !standardPlan.length || !modeledPlan.length
       ? { capitalPrestadoInicial: 0, saldoFinancieroFinal: 0, tasaAplicada: config.tasaMV }
@@ -306,6 +317,7 @@ export function modelarPlan({
   return {
     modeledPlan,
     warning,
+    sugerenciaAbono,
     financialSummary,
     hasChanges: claves.length > 0,
     abonoTotal,

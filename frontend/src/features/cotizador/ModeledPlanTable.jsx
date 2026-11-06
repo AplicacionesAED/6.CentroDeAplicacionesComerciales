@@ -25,7 +25,7 @@ export default function ModeledPlanTable({
   onRestablecer,
 }) {
   const { formatPrice, isUSD, exchangeRate } = useCurrency();
-  const { modeledPlan, fixedQuotas, setFixedQuota, warning, financialSummary } = modeledPlanData;
+  const { modeledPlan, fixedQuotas, setFixedQuota, warning, sugerenciaAbono, financialSummary } = modeledPlanData;
   // Cuota inicial total derivada del calc real (ya refleja el % configurado por proyecto)
   const saldoPct = standardCalc.precio > 0 ? Math.round((standardCalc.saldo / standardCalc.precio) * 100) : 0;
   // Convert COP ↔ display currency for editable cells
@@ -169,6 +169,12 @@ export default function ModeledPlanTable({
         <div className={styles.aviso} role="alert">
           <TriangleAlert size={16} strokeWidth={1.75} aria-hidden="true" />
           <span>{warning}</span>
+        </div>
+      )}
+      {sugerenciaAbono && (
+        <div className={styles.aviso} role="status">
+          <TriangleAlert size={16} strokeWidth={1.75} aria-hidden="true" />
+          <span>{sugerenciaAbono}</span>
         </div>
       )}
 
