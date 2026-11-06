@@ -121,10 +121,15 @@ test('modelarPlan: lo que una cuota paga por encima de su parte de la cuota inic
   assert.equal(ultima.valor, 55800000);
   assert.equal(ultima.abonoParte, 50000000);
   assert.equal(r.modeledPlan[1].valor, 5800000); // las demas cuotas no bajan
+  assert.equal(r.abonoDentro, 50000000); // la cuota inicial sube 30% -> 30% + abono y el saldo baja en lo mismo
+  // El interes se mide contra el estandar de esa cuota inicial ajustada (10,8M por cuota): las cuotas 1..9 pagan
+  // 5M menos que ese estandar y la ultima lo recupera, asi que hay recargo por financiar ese diferido, no descuento.
+  const recargo = Math.round(5000000 * (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9) * 0.015);
+  assert.equal(r.financialSummary.saldoFinancieroFinal, recargo);
   const saldoFinal = r.modeledPlan[r.modeledPlan.length - 1];
-  assert.equal(saldoFinal.valor, 140000000 - 50000000); // la resta llega al saldo final
-  assert.equal(r.financialSummary.saldoFinancieroFinal, 0); // el abono no genera interes
-  assert.equal(r.modeledPlan.reduce((s, e) => s + e.valor, 0), 200000000);
+  assert.equal(saldoFinal.valor, 140000000 - 50000000 + recargo); // la resta del abono llega al saldo final
+  assert.equal(r.modeledPlan[10].diferenciaAcumulada, 0); // al terminar las cuotas la diferencia queda en cero
+  assert.equal(r.modeledPlan.reduce((s, e) => s + e.valor, 0), 200000000 + recargo);
 });
 
 test('modelarPlan: sin el check, pasarse de la cuota inicial avisa y dice que active el abono', () => {
