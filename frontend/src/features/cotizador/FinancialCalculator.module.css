@@ -524,3 +524,10 @@
 .enlaceMini:hover {
   text-decoration: underline;
 }
+
+/* Aviso junto al % de cuota inicial cuando el abono lo ajusta. */
+.pctAbono {
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  color: var(--color-success-ink, #166534);
+}

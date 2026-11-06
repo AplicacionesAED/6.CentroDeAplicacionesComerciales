@@ -346,7 +346,9 @@ export default function FinancialCalculator({
                     min="1"
                     max="99"
                     step="0.01"
-                    value={cuotaPctStr}
+                    value={abonoSaldo > 0 ? String(cuotaInicialPctDisplay) : cuotaPctStr}
+                    readOnly={abonoSaldo > 0}
+                    title={abonoSaldo > 0 ? `Cuota inicial ajustada por el abono: ${cuotaInicialPctOverride ?? config.cuotaInicialPct ?? 30}% pactado + abono` : undefined}
                     onChange={handleCuotaPctChange}
                     onFocus={(e) => {
                       cuotaPctFocused.current = true;
@@ -357,6 +359,7 @@ export default function FinancialCalculator({
                     className={`${styles.control} ${styles.pctInput}`}
                   />
                   <span className={styles.pctSigno}>%</span>
+                  {abonoSaldo > 0 && <span className={styles.pctAbono}>({cuotaInicialPctOverride ?? config.cuotaInicialPct ?? 30}% + abono)</span>}
                   {cuotaInicialPctOverride != null && (
                     <button
                       type="button"
