@@ -279,9 +279,15 @@ export function modelarPlan({
 
   let warning = null;
   const abonoTotalW = abonoTotal;
+  const cuotaBaseAviso = activeCuotas > 0 ? maxAvailable / activeCuotas : 0;
+  const excesoSinAbono = claves.filter((k) => Number(k) <= activeCuotas).reduce((s, k) => s + Math.max(0, Math.round(fixedQuotas[Number(k)] - cuotaBaseAviso)), 0);
   if (!abonoActivo && fixed30Sum - maxAvailable > 1) {
     // Sin el check de abono, lo que las cuotas fijas pasen de la cuota inicial no tiene a donde ir.
     warning = `Las cuotas fijas (${fmtCOP(fixed30Sum)}) superan la cuota inicial (${fmtCOP(maxAvailable)}) por ${fmtCOP(fixed30Sum - maxAvailable)}. Si quieres abonar ese excedente al saldo contra entrega, activa «Abonar adicionalmente al saldo» en Opciones avanzadas.`;
+  } else if (!abonoActivo && excesoSinAbono > 0) {
+    // Una cuota por encima de su parte de la cuota inicial es casi siempre un abono: sin el check no se deja
+    // generar, para que nadie envie una cotizacion donde las demas cuotas bajaron sin que se note.
+    warning = `Una cuota paga ${fmtCOP(excesoSinAbono)} por encima de su parte de la cuota inicial y las demás cuotas bajan para compensar. Si ese valor es un abono, activa «Abonar adicionalmente al saldo» en Opciones avanzadas para que se descuente del saldo contra entrega.`;
   } else if (abonoTotalW > modeledCalc.saldo) {
     warning = `El abono (${fmtCOP(abonoTotalW)}) supera el saldo contra entrega disponible (${fmtCOP(modeledCalc.saldo)}).`;
   } else if (cuotasLibresActivas > 0) {
@@ -292,17 +298,6 @@ export function modelarPlan({
     warning = `La suma de las cuotas fijas no cubre el total requerido de cuota inicial. Faltan ${fmtCOP(saldoRestante)}`;
   } else if (maxAvailable - fixed30Sum < 0) {
     warning = `La suma de las cuotas fijas supera el total de la cuota inicial por ${fmtCOP(Math.abs(saldoRestante))}`;
-  }
-
-  // Sin el check de abono, una cuota que paga mas que su parte de la cuota inicial no es un error (las libres
-  // bajan para compensar), pero casi siempre es un abono: se sugiere activarlo para que vaya al saldo.
-  let sugerenciaAbono = null;
-  if (!abonoActivo && !warning && activeCuotas > 0) {
-    const cuotaBase = maxAvailable / activeCuotas;
-    const exceso = claves.filter((k) => Number(k) <= activeCuotas).reduce((s, k) => s + Math.max(0, Math.round(fixedQuotas[Number(k)] - cuotaBase)), 0);
-    if (exceso > 0) {
-      sugerenciaAbono = `Una cuota paga ${fmtCOP(exceso)} por encima de su parte de la cuota inicial y las demás cuotas bajan para compensar. Si ese valor es un abono, activa «Abonar adicionalmente al saldo» en Opciones avanzadas para que se descuente del saldo contra entrega.`;
-    }
   }
 
   const financialSummary =
@@ -317,7 +312,6 @@ export function modelarPlan({
   return {
     modeledPlan,
     warning,
-    sugerenciaAbono,
     financialSummary,
     hasChanges: claves.length > 0,
     abonoTotal,

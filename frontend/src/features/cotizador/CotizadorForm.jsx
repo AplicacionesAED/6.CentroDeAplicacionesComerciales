@@ -1063,9 +1063,9 @@ export default function CotizadorForm({ dealId, deal, dealLoading, associatedUni
           <Button variant="secondary" onClick={() => irAPaso(paso - 1)} disabled={paso === 0 || submitStatus === 'loading'}>
             Anterior
           </Button>
-          {paso === 1 && quoteType === 'modelador' && (modeledPlanData.warning || modeledPlanData.sugerenciaAbono) && (
-            <p className={`${styles.pieAviso} ${modeledPlanData.warning ? styles.pieAvisoBloqueo : ''}`} role={modeledPlanData.warning ? 'alert' : 'status'}>
-              {modeledPlanData.warning ? `No puedes continuar: ${modeledPlanData.warning}` : modeledPlanData.sugerenciaAbono}
+          {paso === 1 && quoteType === 'modelador' && modeledPlanData.warning && (
+            <p className={`${styles.pieAviso} ${styles.pieAvisoBloqueo}`} role="alert">
+              No puedes continuar: {modeledPlanData.warning}
             </p>
           )}
           {paso === 1 && selectedUnit && (
