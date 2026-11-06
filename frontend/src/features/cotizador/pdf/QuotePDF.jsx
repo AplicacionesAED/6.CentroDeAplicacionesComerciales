@@ -536,13 +536,10 @@ export default function QuotePDF({
                   />
                 )}
                 {abonoSaldo > 0 && (
-                  <Row label="Incluye abono adicional" value={`+ ${formatCOP(abonoSaldo)}`} valueColor="#16A34A" teal />
+                  <Row label="Total Cuota Inicial" value={formatCOP(calc.precio - calc.saldo)} teal />
                 )}
                 {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
-                  <>
-                    <RowGray label="Saldo Contraentrega Propuesta Cliente" value={formatCOP(calc.saldo + financialSummary.saldoFinancieroFinal)} teal />
-                    <RowGray label="Saldo Contraentrega" value={formatCOP(calc.saldo)} teal />
-                  </>
+                  <RowGray label="Saldo Contraentrega" value={formatCOP(calc.saldo + financialSummary.saldoFinancieroFinal)} teal />
                 ) : (
                   <RowGray
                     label={`Saldo Contra Entrega (${calc.precio > 0 ? Math.round((calc.saldo / calc.precio) * 100) : 0}%)`}
@@ -664,21 +661,15 @@ export default function QuotePDF({
 
                 {abonoSaldo > 0 && (
                   <View style={[s.paySaldo, { backgroundColor: '#16A34A' }]}>
-                    <Text style={[s.paySaldoLbl, { color: WHT }]}>Incluye abono adicional a la cuota inicial</Text>
-                    <Text style={s.paySaldoVal}>+ {formatCOP(abonoSaldo)}</Text>
+                    <Text style={[s.paySaldoLbl, { color: WHT }]}>Total cuota inicial</Text>
+                    <Text style={s.paySaldoVal}>{formatCOP(calc.precio - calc.saldo)}</Text>
                   </View>
                 )}
                 {quoteType === 'modelador' && financialSummary && calc.saldo > 0 && financialSummary.saldoFinancieroFinal !== 0 ? (
-                  <>
-                    <View style={s.paySaldo}>
-                      <Text style={s.paySaldoLbl}>Saldo Contraentrega Propuesta Cliente</Text>
+                  <View style={s.paySaldo}>
+                      <Text style={s.paySaldoLbl}>Saldo Contraentrega</Text>
                       <Text style={s.paySaldoVal}>{formatCOP(calc.saldo + financialSummary.saldoFinancieroFinal)}</Text>
                     </View>
-                    <View style={[s.paySaldo, { backgroundColor: OLV2 }]}>
-                      <Text style={s.paySaldoLbl}>Saldo Contraentrega</Text>
-                      <Text style={s.paySaldoVal}>{formatCOP(calc.saldo)}</Text>
-                    </View>
-                  </>
                 ) : (
                   <View style={s.paySaldo}>
                     <Text style={s.paySaldoLbl}>Saldo Contra Entrega</Text>
