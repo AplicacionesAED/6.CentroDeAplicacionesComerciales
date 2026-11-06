@@ -121,15 +121,14 @@ test('modelarPlan: lo que una cuota paga por encima de su parte de la cuota inic
   assert.equal(ultima.valor, 55800000);
   assert.equal(ultima.abonoParte, 50000000);
   assert.equal(r.modeledPlan[1].valor, 5800000); // las demas cuotas no bajan
-  assert.equal(r.abonoDentro, 50000000); // la cuota inicial sube 30% -> 30% + abono y el saldo baja en lo mismo
-  // El interes se mide contra el estandar de esa cuota inicial ajustada (10,8M por cuota): las cuotas 1..9 pagan
-  // 5M menos que ese estandar y la ultima lo recupera, asi que hay recargo por financiar ese diferido, no descuento.
-  const recargo = Math.round(5000000 * (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9) * 0.015);
-  assert.equal(r.financialSummary.saldoFinancieroFinal, recargo);
+  // El interes se mide contra el estandar pactado: la ultima cuota paga 50M antes de que venza el saldo (mes 11), asi que
+  // la diferencia queda en -50M desde la cuota 10 y genera descuento (no recargo) hasta el saldo.
+  const descuento = Math.round(-50000000 * 0.015 * 2);
+  assert.equal(r.financialSummary.saldoFinancieroFinal, descuento);
   const saldoFinal = r.modeledPlan[r.modeledPlan.length - 1];
-  assert.equal(saldoFinal.valor, 140000000 - 50000000 + recargo); // la resta del abono llega al saldo final
-  assert.equal(r.modeledPlan[10].diferenciaAcumulada, 0); // al terminar las cuotas la diferencia queda en cero
-  assert.equal(r.modeledPlan.reduce((s, e) => s + e.valor, 0), 200000000 + recargo);
+  assert.equal(saldoFinal.valor, 140000000 - 50000000 + descuento); // la resta del abono llega al saldo final
+  assert.equal(r.modeledPlan[10].diferenciaAcumulada, -50000000);
+  assert.equal(r.modeledPlan.reduce((s, e) => s + e.valor, 0), 200000000 + descuento);
 });
 
 test('modelarPlan: sin el check, pasarse de la cuota inicial avisa y dice que active el abono', () => {
@@ -141,7 +140,9 @@ test('modelarPlan: sin el check, pasarse de la cuota inicial avisa y dice que ac
   const conCheck = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 10, abonoActivo: true, fixedQuotas, hoy });
   assert.equal(conCheck.warning, null);
   assert.equal(conCheck.abonoTotal, 12000000); // 10 cuotas de 7M contra una base de 5.8M
-  assert.equal(conCheck.modeledPlan[conCheck.modeledPlan.length - 1].valor, 140000000 - 12000000);
+  // Cada cuota paga 1,2M mas que el estandar: la diferencia llega a -12M y todo eso se abona antes del saldo.
+  const descuento = Math.round(-1200000 * 55 * 0.015 - 12000000 * 0.015);
+  assert.equal(conCheck.modeledPlan[conCheck.modeledPlan.length - 1].valor, 140000000 - 12000000 + descuento);
 });
 
 test('modelarPlan: un abono dentro de una cuota no mueve a las cuotas libres', () => {
@@ -181,4 +182,22 @@ test('modelarPlan: el aviso de cuotas fijas que superan la cuota inicial dice el
   const r = modelarPlan({ standardCalc, modeledCalc: standardCalc, config, activeCuotas: 10, abonoActivo: false, fixedQuotas, hoy });
   assert.doesNotMatch(r.warning, /por \$\s?0(\D|$)/);
   assert.match(r.warning, /12\.000\.000/);
+});
+
+test('modelarPlan: separacion mayor con las cuotas del estandar se trata como abono pagado al inicio y descuenta hasta el saldo', () => {
+  // Caso real: separacion de 100M (el estandar pide 2M) y las 36 cuotas fijadas en su valor estandar. Los 98M de mas
+  // entran el dia 0 y el saldo vence en el mes 37: el descuento es 98M x tasa x 37 meses.
+  const cfg = { ...config, separacionModo: 'fijo', minSeparation: 2000000, tasaMV: 0.4167, minMonthlyQuota: 0 };
+  const precio = 366228634;
+  const standardCalc = calcularFinanciero(precio, 36, cfg);
+  const pool = precio * 0.3;
+  const modeledCalc = { ...standardCalc, separacion: 100000000, montoCuotasIniciales: pool - 100000000, valorCuotaMensual: (pool - 100000000) / 36 };
+  const fixedQuotas = Object.fromEntries(Array.from({ length: 36 }, (_, i) => [i + 1, standardCalc.valorCuotaMensual]));
+  const r = modelarPlan({ standardCalc, modeledCalc, config: cfg, activeCuotas: 36, abonoActivo: true, fixedQuotas, hoy });
+  assert.equal(r.warning, null);
+  assert.equal(r.abonoTotal, 98000010);
+  assert.equal(Math.round(r.modeledPlan[1].diferenciaAcumulada), -98000000);
+  assert.equal(Math.round(r.modeledPlan[36].diferenciaAcumulada), -98000000);
+  const esperado = -98000000 * 0.004167 * 37;
+  assert.ok(Math.abs(r.financialSummary.saldoFinancieroFinal - esperado) < 100, 'descuento ' + r.financialSummary.saldoFinancieroFinal + ' vs ' + Math.round(esperado));
 });

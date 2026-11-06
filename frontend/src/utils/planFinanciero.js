@@ -115,16 +115,13 @@ export function repartirAjuste(valores, ajuste) {
  * sigue contando a la cuota inicial. Las cuotas fijadas despues del mes N son abono completo.
  * Sin abono, toda cuota fijada cuenta a la cuota inicial.
  *
- * `abonoDentro` es la parte que cae en cuotas del plazo: eleva la cuota inicial total (y baja el saldo en lo mismo).
- *
- * @returns {{ fixed30Sum: number, abonoTotal: number, abonoDentro: number, abonoPorCuota: Object<number, number> }}
+ * @returns {{ fixed30Sum: number, abonoTotal: number, abonoPorCuota: Object<number, number> }}
  */
 export function repartirAbono(fixedQuotas, maxAvailable, activeCuotas, abonoActivo) {
   const cuotaBase = activeCuotas > 0 ? maxAvailable / activeCuotas : 0;
   const abonoPorCuota = {};
   let fixed30Sum = 0;
   let abonoTotal = 0;
-  let abonoDentro = 0;
   for (const k of Object.keys(fixedQuotas)) {
     const n = Number(k);
     const valor = fixedQuotas[n];
@@ -138,11 +135,10 @@ export function repartirAbono(fixedQuotas, maxAvailable, activeCuotas, abonoActi
       const abono = Math.max(0, valor - cuotaBase);
       if (abono > 0) abonoPorCuota[n] = Math.round(abono);
       abonoTotal += abono;
-      abonoDentro += abono;
       fixed30Sum += valor - abono;
     }
   }
-  return { fixed30Sum, abonoTotal: Math.round(abonoTotal), abonoDentro: Math.round(abonoDentro), abonoPorCuota };
+  return { fixed30Sum, abonoTotal: Math.round(abonoTotal), abonoPorCuota };
 }
 
 const fmtCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -181,15 +177,11 @@ export function modelarPlan({
 
   const claves = Object.keys(fixedQuotas);
   const maxAvailable = modeledCalc.montoCuotasIniciales;
-  const { fixed30Sum, abonoTotal, abonoDentro, abonoPorCuota } = repartirAbono(fixedQuotas, maxAvailable, activeCuotas, abonoActivo);
-  // Lo que una cuota paga por encima de su parte eleva la cuota inicial total (p. ej. 30% -> 40%) y baja el saldo en lo
-  // mismo. El plan estandar contra el que se miden el interes y la diferencia acumulada es el de ESA cuota inicial
-  // ajustada: el abono se compara contra repartirlo parejo, no contra el 30% original.
-  const standardEfectivo =
-    abonoDentro > 0 && standardCalc.cuotas > 0
-      ? { ...standardCalc, valorCuotaMensual: standardCalc.valorCuotaMensual + abonoDentro / standardCalc.cuotas, saldo: standardCalc.saldo - abonoDentro }
-      : standardCalc;
-  const standardPlan = generarPlanPagos(standardEfectivo, separacionDate, hoy);
+  const { fixed30Sum, abonoTotal, abonoPorCuota } = repartirAbono(fixedQuotas, maxAvailable, activeCuotas, abonoActivo);
+  // El interes y la diferencia acumulada se miden SIEMPRE contra el plan estandar pactado (el 30% original), aunque el
+  // abono eleve la cuota inicial real: un abono es plata que entra antes de que venza el saldo, y esa anticipacion es
+  // lo que genera el descuento (mientras mas pronto se abona, mas descuento).
+  const standardPlan = generarPlanPagos(standardCalc, separacionDate, hoy);
   const fixedActiveCount = claves.filter((k) => Number(k) <= activeCuotas).length;
   const cuotasLibresActivas = Math.max(0, activeCuotas - fixedActiveCount);
   const saldoRestante = Math.max(0, maxAvailable - fixed30Sum);
@@ -241,10 +233,9 @@ export function modelarPlan({
         sumIntereses += interesGenerado;
         plan.push({ ...baseEntry, valor, isFixed, ...(abonoParte > 0 ? { abonoParte } : {}), interesGenerado, diferenciaAcumulada: runningDiferenciaAcumulada });
       } else {
-        // Saldo Final: el estandar ya viene con el saldo reducido por el abono de la cuota inicial; se compara contra el
-        // saldo modelado reducido en lo mismo. El valor mostrado se reduce ademas por el abono posterior al plazo.
+        // Saldo Final: interes con el saldo original; el valor mostrado se reduce por el abono.
         const standardValue = standardPlan.find((s) => s.numero > standardCalc.cuotas)?.valor || standardPlan[standardPlan.length - 1]?.valor || 0;
-        runningDiferenciaAcumulada += standardValue - (modeledCalc.saldo - abonoDentro);
+        runningDiferenciaAcumulada += standardValue - modeledCalc.saldo;
         const interesGenerado = ignorarRecargo ? 0 : runningDiferenciaAcumulada * r;
         sumIntereses += interesGenerado;
         // El recargo/descuento financiero SIEMPRE se cobra en el saldo contraentrega (indicacion
@@ -328,8 +319,6 @@ export function modelarPlan({
     financialSummary,
     hasChanges: claves.length > 0,
     abonoTotal,
-    // Parte del abono que cae en cuotas del plazo: la cuota inicial total sube en esto y el saldo baja en lo mismo.
-    abonoDentro,
     // Parte del recargo/descuento cobrada dentro de las cuotas (solo sin saldo contraentrega).
     // Quien reparta las cuotas por su cuenta debe sumarla al total a repartir.
     ajusteEnCuotas,
