@@ -137,9 +137,14 @@ export async function fetchUnitTower(unitId) {
   return data.tower;
 }
 
-// { parking, depositos, cuartosUtiles } de una torre; con dealId incluye los ya reservados por ese negocio.
-export async function fetchAccessories(towerId, dealId) {
-  const { data } = await client.get(`/inventario/torres/${towerId}/accesorios${dealId ? `?dealId=${encodeURIComponent(dealId)}` : ''}`);
+// { parking, parkingLibres, depositos, cuartosUtiles } de una torre; con dealId incluye los ya reservados por ese negocio.
+// Con unitId (Oliv) `parking` trae solo el parqueadero asignado a esa unidad y `parkingLibres` los libres para venta
+// como segundo parqueadero.
+export async function fetchAccessories(towerId, dealId, unitId) {
+  const query = new URLSearchParams();
+  if (dealId) query.set('dealId', dealId);
+  if (unitId) query.set('unitId', unitId);
+  const { data } = await client.get(`/inventario/torres/${towerId}/accesorios${query.size ? `?${query}` : ''}`);
   return data;
 }
 

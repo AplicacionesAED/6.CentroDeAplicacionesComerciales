@@ -117,7 +117,7 @@ export default function QuoteDetailPage() {
     );
   }
 
-  const { deal, unit, calc, paymentPlan, quoteType, parking, deposito, cuartoUtil, descuentoTipo, descuentoPct, descuentoMonto, descuentoModo, bonoAplicado, subsidioNombre, subsidioMonto, adicionalesAplicados } = snap;
+  const { deal, unit, calc, paymentPlan, quoteType, parking, parking2, deposito, cuartoUtil, descuentoTipo, descuentoPct, descuentoMonto, descuentoModo, bonoAplicado, subsidioNombre, subsidioMonto, adicionalesAplicados } = snap;
   const separacion = paymentPlan[0];
   const cuotas = paymentPlan.slice(1, paymentPlan.length - 1);
   const torre = snap.towerName ?? (unit.torre ? `Torre ${unit.torre}` : '—');
@@ -168,6 +168,7 @@ export default function QuoteDetailPage() {
             {unit.terrace_area_m2 != null && <Campo label="Área terraza (m²)" value={unit.terrace_area_m2} />}
             <Campo label="Área total (m²)" value={unit.area_construida} />
             <Campo label="Parqueadero" value={parking?.name ?? '—'} />
+            {parking2 && <Campo label="Segundo parqueadero" value={parking2.name} />}
             <Campo label="Depósito" value={deposito?.name ?? '—'} />
             <Campo label="Cuarto útil" value={cuartoUtil?.name ?? '—'} />
           </div>
@@ -180,6 +181,7 @@ export default function QuoteDetailPage() {
               <Renglon label={`Desc. ${descuentoTipo}${descuentoModo === 'montoFijo' ? ' (Fijo)' : descuentoPct != null ? ` (${descuentoPct}%)` : ''}`} valor={`− ${formatCOP(descuentoMonto)}`} />
             )}
             {parking && <Renglon label="Valor parqueadero" valor={formatCOP(parking.price)} />}
+            {parking2 && <Renglon label="Valor segundo parqueadero" valor={formatCOP(parking2.price)} />}
             {deposito && <Renglon label="Valor depósito" valor={formatCOP(deposito.price)} />}
             {cuartoUtil && <Renglon label="Valor cuarto útil" valor={formatCOP(cuartoUtil.price)} />}
             {bonoAplicado != null && bonoAplicado > 0 && <Renglon label="Bono aplicado" valor={`− ${formatCOP(bonoAplicado)}`} />}

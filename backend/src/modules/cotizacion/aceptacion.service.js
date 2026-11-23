@@ -89,11 +89,19 @@ async function aceptar(usuario, id) {
   }
 
   await verificarDisponible(hs, cotizacion.parking_id, 'parqueadero', cotizacion.parking_name);
+  await verificarDisponible(hs, cotizacion.parking2_id, 'segundo parqueadero', cotizacion.parking2_name);
   await verificarDisponible(hs, cotizacion.deposito_id, 'depósito', cotizacion.deposito_name);
   await verificarDisponible(hs, cotizacion.cuarto_util_id, 'cuarto útil', cotizacion.cuarto_util_name);
 
-  // Se leen ANTES de resetear los estados.
-  const otrosParqueaderos = await otrasAceptadas('parking_id', cotizacion.deal_id, id, cotizacion.parking_id);
+  // Se leen ANTES de resetear los estados. Un parqueadero que esta cotizacion conserva (como principal o como segundo)
+  // no debe liberarse.
+  const parqueaderosQueConserva = new Set([cotizacion.parking_id, cotizacion.parking2_id].filter(Boolean).map(String));
+  const otrosParqueaderos = (await otrasAceptadas('parking_id', cotizacion.deal_id, id, cotizacion.parking_id)).filter(
+    (f) => !parqueaderosQueConserva.has(String(f.parking_id))
+  );
+  const otrosParqueaderos2 = (await otrasAceptadas('parking2_id', cotizacion.deal_id, id, cotizacion.parking2_id)).filter(
+    (f) => !parqueaderosQueConserva.has(String(f.parking2_id))
+  );
   const otrosDepositos = await otrasAceptadas('deposito_id', cotizacion.deal_id, id, cotizacion.deposito_id);
   const otrosCuartos = await otrasAceptadas('cuarto_util_id', cotizacion.deal_id, id, cotizacion.cuarto_util_id);
   const otrasUnidades = await otrasAceptadas('unit_id', cotizacion.deal_id, id, cotizacion.unit_id);
@@ -151,7 +159,7 @@ async function aceptar(usuario, id) {
     hs,
     cotizacion.deal_id,
     OBJETO_ACCESORIOS,
-    new Set([cotizacion.parking_id, cotizacion.deposito_id, cotizacion.cuarto_util_id].filter(Boolean).map(String))
+    new Set([cotizacion.parking_id, cotizacion.parking2_id, cotizacion.deposito_id, cotizacion.cuarto_util_id].filter(Boolean).map(String))
   );
 
   // 6. Monto y unidad en el negocio.
@@ -171,6 +179,7 @@ async function aceptar(usuario, id) {
     for (const fila of otrasUnidades) await marcar(servicio, OBJETO_UNIDADES, fila.unit_id, { unit_status: 'Disponible' }, 'liberar la unidad anterior');
     for (const [idAcc, etiqueta] of [
       [cotizacion.parking_id, 'el parqueadero'],
+      [cotizacion.parking2_id, 'el segundo parqueadero'],
       [cotizacion.deposito_id, 'el depósito'],
       [cotizacion.cuarto_util_id, 'el cuarto útil'],
     ]) {
@@ -178,6 +187,7 @@ async function aceptar(usuario, id) {
     }
     for (const [filas, campo, etiqueta] of [
       [otrosParqueaderos, 'parking_id', 'el parqueadero anterior'],
+      [otrosParqueaderos2, 'parking2_id', 'el segundo parqueadero anterior'],
       [otrosDepositos, 'deposito_id', 'el depósito anterior'],
       [otrosCuartos, 'cuarto_util_id', 'el cuarto útil anterior'],
     ]) {
@@ -190,6 +200,7 @@ async function aceptar(usuario, id) {
   // 8. Solo el negocio que acepta queda asociado a la unidad y a los accesorios.
   await desvincularDeOtrosNegocios(hs, OBJETO_UNIDADES, cotizacion.unit_id, cotizacion.deal_id);
   await desvincularDeOtrosNegocios(hs, OBJETO_ACCESORIOS, cotizacion.parking_id, cotizacion.deal_id);
+  await desvincularDeOtrosNegocios(hs, OBJETO_ACCESORIOS, cotizacion.parking2_id, cotizacion.deal_id);
   await desvincularDeOtrosNegocios(hs, OBJETO_ACCESORIOS, cotizacion.deposito_id, cotizacion.deal_id);
   await desvincularDeOtrosNegocios(hs, OBJETO_ACCESORIOS, cotizacion.cuarto_util_id, cotizacion.deal_id);
 

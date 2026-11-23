@@ -108,13 +108,39 @@ async function torreDeUnidad(usuario, unitId) {
 
 const TIPOS_ACCESORIO = { Depósito: 'Depósito', 'Cuarto Útil': 'Cuarto Útil' };
 
+// Parqueaderos de Oliv libres para venta como segundo parqueadero, segun el listado de asignacion (SEIVA 3, oct 2026:
+// S346-S348). LIVA no tiene libres. Solo estos se ofrecen como segundo parqueadero.
+const PARQUEADEROS_LIBRES_OLIV = new Set(['S346', 'S347', 'S348']);
+
+// De los `candidatos` (parqueaderos del listado de libres), los que no estan asignados a ninguna unidad.
+async function sinUnidadAsignada(hs, candidatos) {
+  if (candidatos.length === 0) return [];
+  try {
+    const r = await hs.post(`/crm/v4/associations/${OBJETO_ACCESORIOS}/${OBJETO_UNIDADES}/batch/read`, { inputs: candidatos.map((c) => ({ id: c.id })) });
+    const conUnidad = new Set((r.results || []).filter((x) => (x.to || []).length > 0).map((x) => String(x.from.id)));
+    return candidatos.filter((c) => !conUnidad.has(String(c.id)));
+  } catch (e) {
+    console.error('[inventario] No se pudieron leer los parqueaderos libres:', e.details ?? e.message);
+    return [];
+  }
+}
+
 // Accesorios de una torre. Con `dealId` incluye tambien los ya asociados a ese negocio (aunque no esten
 // 'Disponible' o sean de otra torre): si no, un accesorio separado por una cotizacion previa del mismo negocio
 // desapareceria del selector sin forma de volver a elegirlo.
-async function accesorios(usuario, towerId, dealId) {
+// Con `unitId` (Oliv): cada unidad tiene su parqueadero asignado (asociacion unidad-accesorio en HubSpot), asi que
+// `parking` se limita a los asociados a esa unidad -aunque sean de otra torre, p. ej. S324 de SEIVA asignado a
+// LIVA-104- y `parkingLibres` trae los libres para venta como segundo parqueadero.
+async function accesorios(usuario, towerId, dealId, unitId) {
   const hs = clienteDeUsuario(usuario.id);
   const deTorre = await hs.get(`/crm/v4/objects/${OBJETO_TORRES}/${towerId}/associations/${OBJETO_ACCESORIOS}`);
   const idsTorre = (deTorre.results || []).map((r) => String(r.toObjectId));
+
+  let idsUnidad = null;
+  if (unitId) {
+    const deUnidad = await hs.get(`/crm/v4/objects/${OBJETO_UNIDADES}/${unitId}/associations/${OBJETO_ACCESORIOS}`);
+    idsUnidad = new Set((deUnidad.results || []).map((r) => String(r.toObjectId)));
+  }
 
   let idsNegocio = [];
   if (dealId) {
@@ -126,7 +152,7 @@ async function accesorios(usuario, towerId, dealId) {
     }
   }
 
-  const ids = [...new Set([...idsTorre, ...idsNegocio])];
+  const ids = [...new Set([...idsTorre, ...idsNegocio, ...(idsUnidad || [])])];
   if (ids.length === 0) return { parking: [] };
 
   const lote = await hs.post(`/crm/v3/objects/${OBJETO_ACCESORIOS}/batch/read`, {
@@ -145,8 +171,18 @@ async function accesorios(usuario, towerId, dealId) {
     }))
     .filter((a) => a.status === 'Disponible' || a.reservedByThisDeal);
 
+  let parking = lista.filter((a) => a.tipo === 'Parqueadero');
+  let parkingLibres = [];
+  if (idsUnidad) {
+    const deLaTorre = new Set(idsTorre);
+    const candidatos = parking.filter((p) => !idsUnidad.has(String(p.id)) && PARQUEADEROS_LIBRES_OLIV.has(p.name) && deLaTorre.has(String(p.id)));
+    parkingLibres = await sinUnidadAsignada(hs, candidatos);
+    parking = parking.filter((p) => idsUnidad.has(String(p.id)));
+  }
+
   return {
-    parking: lista.filter((a) => a.tipo === 'Parqueadero'),
+    parking,
+    parkingLibres,
     depositos: lista.filter((a) => a.tipo === 'Depósito'),
     cuartosUtiles: lista.filter((a) => a.tipo === 'Cuarto Útil'),
   };

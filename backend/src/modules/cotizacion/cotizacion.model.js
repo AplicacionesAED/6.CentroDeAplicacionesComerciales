@@ -28,11 +28,16 @@ const Cotizacion = sequelize.define(
     snapshot_json: { type: DataTypes.JSONB, allowNull: true }, // mismos datos que el PDF, para la vista HTML
     parking_id: { type: DataTypes.STRING(30), allowNull: true },
     parking_name: { type: DataTypes.STRING(100), allowNull: true },
+    // Segundo parqueadero (libre para venta, solo Oliv).
+    parking2_id: { type: DataTypes.STRING(30), allowNull: true },
+    parking2_name: { type: DataTypes.STRING(100), allowNull: true },
     deposito_id: { type: DataTypes.STRING(30), allowNull: true },
     deposito_name: { type: DataTypes.STRING(100), allowNull: true },
     cuarto_util_id: { type: DataTypes.STRING(30), allowNull: true },
     cuarto_util_name: { type: DataTypes.STRING(100), allowNull: true },
     project: { type: DataTypes.STRING(50), allowNull: true },
+    // Cuando el vencimiento automatico ya la proceso (ver vencimiento.js); null = sin procesar.
+    vencida_procesada_at: { type: DataTypes.DATE, allowNull: true },
   },
   { tableName: 'cotizaciones', createdAt: 'created_at', updatedAt: false }
 );

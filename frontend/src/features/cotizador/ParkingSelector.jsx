@@ -9,6 +9,7 @@ function formatFull(v) {
 }
 const KIND_META = {
   parqueadero: { Icon: Car, label: 'Parqueadero', labelLower: 'parqueadero', labelPlural: 'parqueaderos' },
+  'parqueadero-2': { Icon: Car, label: 'Segundo parqueadero', labelLower: 'segundo parqueadero', labelPlural: 'parqueaderos libres' },
   deposito: { Icon: Package, label: 'Depósito', labelLower: 'depósito', labelPlural: 'depósitos' },
   'cuarto-util': { Icon: DoorClosed, label: 'Cuarto útil', labelLower: 'cuarto útil', labelPlural: 'cuartos útiles' },
 };

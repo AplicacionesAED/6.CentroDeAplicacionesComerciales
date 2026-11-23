@@ -9,7 +9,7 @@ const unidadesQuerySchema = z.object({
 });
 const unitIdParamsSchema = z.object({ unitId: z.string().regex(/^\d+$/) });
 const towerIdParamsSchema = z.object({ towerId: z.string().regex(/^\d+$/) });
-const accesoriosQuerySchema = z.object({ dealId: z.string().regex(/^\d+$/).optional() });
+const accesoriosQuerySchema = z.object({ dealId: z.string().regex(/^\d+$/).optional(), unitId: z.string().regex(/^\d+$/).optional() });
 const asociarUnidadSchema = z.object({ dealId: zIdHubspot, unitId: zIdHubspot });
 const asociarParqueaderoSchema = z.object({ dealId: zIdHubspot, parkingId: zIdHubspot });
 

@@ -15,6 +15,21 @@ const server = app.listen(PORT, () => {
   console.log(`Backend Centro de Aplicaciones Comerciales escuchando en http://localhost:${PORT}`);
 });
 
+// Tareas automaticas de Oliv, apagadas por defecto: escriben en HubSpot (desvinculan inmuebles y accesorios, cambian
+// estados y etapas). Cada una se enciende con su variable en "on" y corre poco despues de arrancar y luego cada 6 horas.
+const SEIS_HORAS_MS = 6 * 60 * 60 * 1000;
+function programar(nombre, tarea, esperaInicialMs) {
+  const correr = () => tarea({ simulacro: false }).catch((err) => console.error(`[${nombre}] Error:`, err.message));
+  setTimeout(correr, esperaInicialMs).unref();
+  setInterval(correr, SEIS_HORAS_MS).unref();
+}
+// Vencimiento de cotizaciones (8 dias): ver modules/cotizacion/vencimiento.js.
+if (process.env.EXPIRAR_COTIZACIONES === 'on') programar('vencimiento', require('./modules/cotizacion/vencimiento').procesarVencimientos, 60 * 1000);
+// Separacion vencida (15 dias en etapa 5 pasa a etapa 5.5): ver modules/cotizacion/separacionVencida.js.
+if (process.env.EXPIRAR_SEPARACIONES === 'on') {
+  programar('separaciones', require('./modules/cotizacion/separacionVencida').procesarSeparacionesVencidas, 90 * 1000);
+}
+
 // Sin esto, un puerto ocupado revienta con un stack trace confuso -- ver el
 // gotcha de nodemon+SIGKILL en ARQUITECTURA-BACKEND.md (Windows puede tardar
 // unos segundos en liberar el puerto incluso tras un SIGKILL limpio).

@@ -103,6 +103,8 @@ async function crear(usuario, data, archivo) {
     snapshot_json: data.snapshot ?? null,
     parking_id: data.parkingId ?? null,
     parking_name: data.parkingName ?? null,
+    parking2_id: data.parking2Id ?? null,
+    parking2_name: data.parking2Name ?? null,
     deposito_id: data.depositoId ?? null,
     deposito_name: data.depositoName ?? null,
     cuarto_util_id: data.cuartoUtilId ?? null,

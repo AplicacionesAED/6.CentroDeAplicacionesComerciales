@@ -375,6 +375,7 @@ export default function QuotePDF({
   ownerEmail,
   towerName,
   parking,
+  parking2,
   deposito,
   cuartoUtil,
   bonoAplicado,
@@ -476,6 +477,7 @@ export default function QuotePDF({
                 {unit.terrace_area_m2 ? <Row label="Área Terraza (m²)" value={`${unit.terrace_area_m2}`} icon={iconTerraza} /> : null}
                 <RowGray label="Área Total (m²)" value={`${unit.area_construida}`} icon={iconHome} />
                 <Row label="Parqueadero" value={parking?.name ?? '—'} icon={iconAuto} />
+                {parking2 && <Row label="Segundo Parqueadero" value={parking2.name} icon={iconAuto} />}
                 <Row label="Depósito" value={deposito?.name ?? '—'} icon={iconAuto} />
                 <Row label="Cuarto Útil" value={cuartoUtil?.name ?? '—'} icon={iconAuto} />
               </View>
@@ -491,6 +493,7 @@ export default function QuotePDF({
                   />
                 ) : null}
                 {parking && <Row label="Valor Parqueadero" value={formatCOP(parking.price)} />}
+                {parking2 && <Row label="Valor Segundo Parqueadero" value={formatCOP(parking2.price)} />}
                 {deposito && <Row label="Valor Depósito" value={formatCOP(deposito.price)} />}
                 {cuartoUtil && <Row label="Valor Cuarto Útil" value={formatCOP(cuartoUtil.price)} />}
                 {bonoAplicado && bonoAplicado > 0 ? <Row label="Bono Aplicado Inmueble" value={`− ${formatCOP(bonoAplicado)}`} /> : null}

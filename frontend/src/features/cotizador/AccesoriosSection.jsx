@@ -15,7 +15,9 @@ export default function AccesoriosSection({
   pendiente,
   aviso,
 }) {
-  const total = opciones.parking.length + opciones.depositos.length + opciones.cuartosUtiles.length;
+  // Segundo parqueadero (solo Oliv): parqueaderos libres para venta, no asignados a ninguna unidad.
+  const libres = opciones.parkingLibres ?? [];
+  const total = opciones.parking.length + libres.length + opciones.depositos.length + opciones.cuartosUtiles.length;
   if (bloqueado) {
     return (
       <section className={`${styles.root} ${styles.bloqueado}`} aria-label="Accesorios Inmobiliarios">
@@ -27,7 +29,7 @@ export default function AccesoriosSection({
       </section>
     );
   }
-  if (!cargando && total === 0 && !seleccion.parking && !seleccion.deposito && !seleccion.cuartoUtil) {
+  if (!cargando && total === 0 && !seleccion.parking && !seleccion.parking2 && !seleccion.deposito && !seleccion.cuartoUtil) {
     return <p className={styles.vacio}>Este inmueble no tiene accesorios inmobiliarios disponibles para seleccionar.</p>;
   }
   return (
@@ -52,6 +54,9 @@ export default function AccesoriosSection({
       ) : (
         <>
           <ParkingSelector parking={opciones.parking} loading={cargando} selected={seleccion.parking} onSelect={(v) => onSeleccion('parking', v)} kind="parqueadero" />
+          {(libres.length > 0 || seleccion.parking2) && (
+            <ParkingSelector parking={libres} loading={cargando} selected={seleccion.parking2} onSelect={(v) => onSeleccion('parking2', v)} kind="parqueadero-2" />
+          )}
           <ParkingSelector parking={opciones.depositos} loading={cargando} selected={seleccion.deposito} onSelect={(v) => onSeleccion('deposito', v)} kind="deposito" />
           <ParkingSelector parking={opciones.cuartosUtiles} loading={cargando} selected={seleccion.cuartoUtil} onSelect={(v) => onSeleccion('cuartoUtil', v)} kind="cuarto-util" />
           {pendiente && (

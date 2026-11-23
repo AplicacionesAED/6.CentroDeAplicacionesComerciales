@@ -7,12 +7,12 @@ const VISIBLES = 4;
 const cop = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 const fecha = (iso) => (iso ? new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : '');
 // Accesorios que llevaba la cotizacion, p. ej. "P-102 · D-14".
-const accesoriosDe = (q) => [q.parking_name, q.deposito_name, q.cuarto_util_name].filter(Boolean).join(' · ');
+const accesoriosDe = (q) => [q.parking_name, q.parking2_name, q.deposito_name, q.cuarto_util_name].filter(Boolean).join(' · ');
 // Dos cotizaciones con el mismo inmueble, accesorios y precio dan lo mismo al recotizar: se deja la mas reciente (la lista llega de nueva a vieja).
 function sinRepetidas(lista) {
   const vistas = new Set();
   return lista.filter((q) => {
-    const clave = [q.unit_id, q.parking_id, q.deposito_id, q.cuarto_util_id, q.total_price].join('|');
+    const clave = [q.unit_id, q.parking_id, q.parking2_id, q.deposito_id, q.cuarto_util_id, q.total_price].join('|');
     if (vistas.has(clave)) return false;
     vistas.add(clave);
     return true;

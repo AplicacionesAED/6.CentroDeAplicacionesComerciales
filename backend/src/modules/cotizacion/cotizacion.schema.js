@@ -21,6 +21,8 @@ const crearSchema = z.object({
   balance: z.number().nullish(),
   parkingId: zIdHubspot.nullish(),
   parkingName: texto,
+  parking2Id: zIdHubspot.nullish(),
+  parking2Name: texto,
   depositoId: zIdHubspot.nullish(),
   depositoName: texto,
   cuartoUtilId: zIdHubspot.nullish(),

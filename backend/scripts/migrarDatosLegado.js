@@ -128,10 +128,11 @@ async function main() {
       const [r] = await q(
         `INSERT INTO cotizaciones (id, deal_id, deal_name, unit_id, unit_code, unit_tower, unit_floor, user_email, generated_by_email, quote_type,
             total_price, separation, monthly_payment, num_installments, balance, pdf_filename, status, snapshot_json, parking_id, parking_name,
-            deposito_id, deposito_name, cuarto_util_id, cuarto_util_name, project, created_at)
+            deposito_id, deposito_name, cuarto_util_id, cuarto_util_name, project, parking2_id, parking2_name, vencida_procesada_at, created_at)
          VALUES (:id, :deal_id, :deal_name, :unit_id, :unit_code, :unit_tower, :unit_floor, :user_email, :generated_by_email, :quote_type,
             :total_price, :separation, :monthly_payment, :num_installments, :balance, :pdf_filename, :status, CAST(:snapshot AS jsonb), :parking_id, :parking_name,
-            :deposito_id, :deposito_name, :cuarto_util_id, :cuarto_util_name, :project, CAST(:created_at AS timestamp) AT TIME ZONE 'UTC')
+            :deposito_id, :deposito_name, :cuarto_util_id, :cuarto_util_name, :project, :parking2_id, :parking2_name,
+            CAST(:vencida_procesada_at AS timestamp) AT TIME ZONE 'UTC', CAST(:created_at AS timestamp) AT TIME ZONE 'UTC')
          ON CONFLICT (id) DO NOTHING RETURNING id`,
         {
           id: c.id,
@@ -160,10 +161,22 @@ async function main() {
           cuarto_util_name: c.cuarto_util_name ?? null,
           // Las cotizaciones anteriores a la columna `project` no la traen: se deduce del snapshot (negocio o unidad).
           project: [c.project, snapshot?.deal?.proyecto_inmobiliario_cac, snapshot?.unit?.proyecto_inmobiliario].find((p) => PROYECTOS.includes(p)) ?? null,
+          parking2_id: c.parking2_id ?? null,
+          parking2_name: c.parking2_name ?? null,
+          vencida_procesada_at: c.vencida_procesada_at ?? null,
           created_at: c.created_at,
         }
       );
       cuenta(r.length ? 'cotizaciones migradas' : 'cotizaciones ya existentes');
+      // Una cotizacion migrada antes de que existieran estas columnas no las trae: se completan sin pisar lo que ya tenga.
+      if (!r.length && (c.parking2_id || c.vencida_procesada_at)) {
+        await q(
+          `UPDATE cotizaciones SET parking2_id = COALESCE(parking2_id, :parking2_id), parking2_name = COALESCE(parking2_name, :parking2_name),
+              vencida_procesada_at = COALESCE(vencida_procesada_at, CAST(:vencida_procesada_at AS timestamp) AT TIME ZONE 'UTC')
+            WHERE id = :id`,
+          { id: c.id, parking2_id: c.parking2_id ?? null, parking2_name: c.parking2_name ?? null, vencida_procesada_at: c.vencida_procesada_at ?? null }
+        );
+      }
 
       if (c.pdf_filename && LEGACY_QUOTES_DIR) {
         const origen = path.join(LEGACY_QUOTES_DIR, path.basename(c.pdf_filename));

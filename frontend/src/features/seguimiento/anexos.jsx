@@ -104,6 +104,7 @@ export async function generarPaqueteAnexos(quoteId) {
       financialSummary={snap.financialSummary}
       towerName={snap.towerName}
       parking={snap.parking}
+      parking2={snap.parking2}
       deposito={snap.deposito}
       cuartoUtil={snap.cuartoUtil}
       bonoAplicado={snap.bonoAplicado}
@@ -138,27 +139,28 @@ export async function generarPaqueteAnexos(quoteId) {
   } else {
     avisos.push(`El inmueble ${snap.unit.codigo_unidad} no tiene plano cargado en HubSpot: se omitió el plano acotado ${apto}.`);
   }
-  // 3. Anexo del parqueadero (el plano sale del accesorio inmobiliario en HubSpot)
-  if (snap.parking?.id) {
-    const info = await fetchAccesorioPlano(snap.parking.id);
+  // 3. Anexo del parqueadero, uno por parqueadero cotizado (principal y segundo parqueadero, si lo hay). El plano sale
+  //    del accesorio inmobiliario en HubSpot.
+  const parqueaderos = [snap.parking, snap.parking2].filter((p) => p?.id);
+  for (const parqueadero of parqueaderos) {
+    const info = await fetchAccesorioPlano(parqueadero.id);
     if (info.plano) {
       const parq = await pdf(
         <AnexoParqueaderoPDF
           unit={snap.unit}
           towerName={snap.towerName}
           planoUrl={info.plano}
-          parqueadero={snap.parking.name}
+          parqueadero={parqueadero.name}
           nombreComprador={nombreComprador}
           nombreDirector={nombreDirector}
         />
       ).toBlob();
       await agregarPaginas(final, parq);
     } else {
-      avisos.push(`El parqueadero ${snap.parking.name} no tiene plano cargado en HubSpot: se omitió su anexo.`);
+      avisos.push(`El parqueadero ${parqueadero.name} no tiene plano cargado en HubSpot: se omitió su anexo.`);
     }
-  } else {
-    avisos.push('La cotización no incluye parqueadero: no hay anexo de parqueadero.');
   }
+  if (parqueaderos.length === 0) avisos.push('La cotización no incluye parqueadero: no hay anexo de parqueadero.');
   // 4. Especificaciones técnicas (documento fijo) — la firma se dibuja directo en el hueco
   //    que ya tenía esa página (ver firmarEspecificaciones), no se agrega una página nueva.
   const paginasEspecificaciones = await agregarPaginas(final, await fetchAnexoEstatico('especificaciones-oliv'));
